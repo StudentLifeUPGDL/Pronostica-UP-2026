@@ -1,0 +1,82 @@
+rules_version = '2';
+
+// Quiniela Mundial 2026 — Firestore security rules.
+//
+// Security boundaries enforced here:
+//   - config/* and results/* : public read, admin-only write.
+//   - users/{uid}            : a user reads/writes only their own doc (but cannot
+//                              change their own paymentStatus); admin reads/writes all.
+//   - predictions/{predId}   : a user reads/writes only their own entries, only while
+//                              that league's window is open, and cannot self-mark paid;
+//                              admin reads all and manages paymentStatus.
+//
+// NOTE (client-enforced, not security boundaries): the "max 5 pending" cap, the
+// payment-deadline auto-void, "MAIN must be paid before buying a fix", and "one R32 +
+// one R16 fix per entry". These are courtesy/business rules; a Cloud Function can
+// harden them later. config/app MUST be seeded for these get()s to resolve.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() { return request.auth != null; }
+    function isVerified() { return isSignedIn() && request.auth.token.email_verified == true; }
+    function isAdmin()    { return isSignedIn() && request.auth.token.admin == true; }
+
+    function cfg()      { return get(/databases/$(database)/documents/config/app).data; }
+    function lockDate() { return cfg().lockDate; }
+    function r32Start() { return cfg().r32StartDate; }
+    function r16Start() { return cfg().r16StartDate; }
+
+    match /config/{doc} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /results/{doc} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /users/{uid} {
+      allow read:   if isAdmin() || (isSignedIn() && request.auth.uid == uid);
+      allow create: if isSignedIn() && request.auth.uid == uid;
+      allow update: if isAdmin()
+                    || (isSignedIn() && request.auth.uid == uid
+                        && request.resource.data.paymentStatus == resource.data.paymentStatus);
+      allow delete: if isAdmin();
+    }
+
+    match /predictions/{predId} {
+      function createWindowOpen() {
+        let league = request.resource.data.league;
+        return (league == 'main' && request.time < lockDate())
+            || (league == 'r32'  && request.time < r32Start())
+            || (league == 'r16'  && request.time < r16Start());
+      }
+      function updateWindowOpen() {
+        let league = resource.data.league;
+        return (league == 'main' && request.time < lockDate())
+            || (league == 'r32'  && request.time < r32Start())
+            || (league == 'r16'  && request.time < r16Start());
+      }
+
+      allow read: if isAdmin() || (isSignedIn() && resource.data.uid == request.auth.uid);
+
+      allow create: if isVerified()
+                    && request.resource.data.uid == request.auth.uid
+                    && request.resource.data.paymentStatus == 'pending'
+                    && createWindowOpen();
+
+      allow update: if isAdmin()
+                    || (isVerified()
+                        && resource.data.uid == request.auth.uid
+                        && request.resource.data.uid == resource.data.uid
+                        && request.resource.data.league == resource.data.league
+                        && request.resource.data.paymentStatus == resource.data.paymentStatus
+                        && updateWindowOpen());
+
+      allow delete: if isAdmin()
+                    || (isVerified() && resource.data.uid == request.auth.uid && updateWindowOpen());
+    }
+  }
+}
