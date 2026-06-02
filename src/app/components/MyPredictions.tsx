@@ -10,7 +10,6 @@ interface MyPredictionsProps {
   results: Results;
   email?: string;
   lockPassed: boolean;
-  canSubmit: boolean;
   r32JoinOpen: boolean;
   r16JoinOpen: boolean;
   maxPending: number;
@@ -243,7 +242,7 @@ function MainCard({ main, results, email, lockPassed, onEdit, onDelete }: {
 }
 
 export function MyPredictions({
-  predictions, results, email, lockPassed, canSubmit,
+  predictions, results, email, lockPassed,
   r32JoinOpen, r16JoinOpen, maxPending,
   onNew, onEdit, onDelete, onJoin,
 }: MyPredictionsProps) {
@@ -251,7 +250,7 @@ export function MyPredictions({
   // Standalone side-league entries (R32 / R16 tournaments, independent of the main).
   const solos = predictions.filter(p => p.league !== 'main');
   const pendingCount = mains.filter(p => p.paymentStatus === 'pending').length;
-  const newDisabled = lockPassed || !canSubmit || pendingCount >= maxPending;
+  const newDisabled = lockPassed || pendingCount >= maxPending;
   const joinOpenFor = (l: Prediction['league']) => (l === 'r32' ? r32JoinOpen : r16JoinOpen);
 
   return (
@@ -266,7 +265,7 @@ export function MyPredictions({
         <button
           onClick={onNew}
           disabled={newDisabled}
-          title={lockPassed ? 'El torneo ya inició' : !canSubmit ? 'Verifica tu correo' : pendingCount >= maxPending ? `Máximo ${maxPending} pendientes` : ''}
+          title={lockPassed ? 'El torneo ya inició' : pendingCount >= maxPending ? `Máximo ${maxPending} pendientes` : ''}
           className="flex items-center gap-2 px-4 py-2.5 rounded-xl cursor-pointer transition-all disabled:opacity-40 disabled:cursor-not-allowed"
           style={{ background: '#f5a623', color: '#062b1a', fontFamily: 'Oswald, sans-serif', fontWeight: 700, fontSize: '0.85rem', letterSpacing: '0.05em' }}>
           <Plus size={16} /> NUEVA QUINIELA
@@ -327,8 +326,8 @@ export function MyPredictions({
 
         <div className="flex flex-wrap gap-2 mb-4">
           {([['r32', 'UNIRME A R32 · DIECISEISAVOS', r32JoinOpen], ['r16', 'UNIRME A R16 · OCTAVOS', r16JoinOpen]] as const).map(([round, label, open]) => (
-            <button key={round} onClick={() => onJoin(round)} disabled={!open || !canSubmit}
-              title={!canSubmit ? 'Verifica tu correo' : !open ? 'La ventana de esta liga ya cerró' : ''}
+            <button key={round} onClick={() => onJoin(round)} disabled={!open}
+              title={!open ? 'La ventana de esta liga ya cerró' : ''}
               className="flex items-center gap-2 px-4 py-2.5 rounded-xl cursor-pointer transition-all disabled:opacity-40 disabled:cursor-not-allowed"
               style={{ background: 'rgba(192,132,252,0.15)', color: '#c084fc', border: '1px solid rgba(192,132,252,0.35)', fontFamily: 'Oswald, sans-serif', fontWeight: 700, fontSize: '0.82rem', letterSpacing: '0.04em' }}>
               <Plus size={15} /> {label}

@@ -9,7 +9,6 @@ import {
   saveMainPrediction, saveSideEntry, deletePrediction,
 } from '../lib/predictions';
 import { AuthPage } from './components/AuthPage';
-import { VerifyEmailNotice } from './components/VerifyEmailNotice';
 import { Header } from './components/Header';
 import { HomePage } from './components/HomePage';
 import { ResultsPage } from './components/ResultsPage';
@@ -56,7 +55,7 @@ function FirebaseSetupNotice() {
 }
 
 export default function App() {
-  const { user, loading, configured, isVerified, isAdmin, logOut } = useAuth();
+  const { user, loading, configured, isAdmin, logOut } = useAuth();
 
   const [currentPage, setCurrentPage] = useState<Page>('home');
   const [predictions, setPredictions] = useState<Prediction[]>([]);
@@ -102,7 +101,6 @@ export default function App() {
   }
 
   function handleNewPrediction() {
-    if (!isVerified) { setActionError('Verifica tu correo para crear quinielas.'); return; }
     if (lockPassed) { setActionError('El torneo ya inició: no se pueden crear nuevas quinielas.'); return; }
     const n = predictions.filter(p => p.league === 'main').length + 1;
     setWizard({ mode: 'main', base: null, name: `Mi Quiniela #${n}` });
@@ -110,7 +108,6 @@ export default function App() {
   }
 
   function handleEditPrediction(pred: Prediction) {
-    if (!isVerified) { setActionError('Verifica tu correo para editar.'); return; }
     // Standalone side-league entry (r32/r16): editable until its round starts.
     if (pred.league !== 'main') {
       const open = pred.league === 'r32' ? r32JoinOpen : r16JoinOpen;
@@ -125,7 +122,6 @@ export default function App() {
   }
 
   function handleJoin(round: 'r32' | 'r16') {
-    if (!isVerified) { setActionError('Verifica tu correo para unirte a una liga.'); return; }
     // Standalone entry: no parent main. The player builds a provisional combination
     // that seeds the bracket; real results overlay it as they come in.
     setWizard({
@@ -183,8 +179,6 @@ export default function App() {
         onLogout={logOut}
       />
 
-      {!isVerified && <VerifyEmailNotice />}
-
       {actionError && (
         <div className="max-w-4xl mx-auto px-4 pt-4">
           <div className="px-4 py-2.5 rounded-xl" style={{ background: 'rgba(230,57,70,0.1)', border: '1px solid rgba(230,57,70,0.25)', color: '#e63946', fontSize: '0.82rem' }}>
@@ -224,7 +218,6 @@ export default function App() {
                 results={results}
                 email={user.email ?? undefined}
                 lockPassed={lockPassed}
-                canSubmit={isVerified}
                 r32JoinOpen={r32JoinOpen}
                 r16JoinOpen={r16JoinOpen}
                 maxPending={config.maxPendingPerUser}

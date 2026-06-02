@@ -66,7 +66,7 @@ export function AuthPage() {
         if (displayName.trim().length < 2) { setError('Ingresa tu nombre.'); setBusy(false); return; }
         if (password.length < 6) { setError('La contraseña debe tener al menos 6 caracteres.'); setBusy(false); return; }
         await signUp(email, password, displayName);
-        setSuccess('¡Cuenta creada! Te enviamos un correo de verificación. Revísalo (y la carpeta de spam).');
+        setSuccess('¡Cuenta creada! Ya puedes crear tus quinielas.');
       } else {
         await resetPassword(email);
         setSuccess('Te enviamos un enlace para restablecer tu contraseña.');

@@ -45,8 +45,8 @@ Tiempo estimado: **30–45 min**.
 
 1. [ ] En [console.firebase.google.com](https://console.firebase.google.com) → **Agregar proyecto**.
 2. [ ] **Build → Authentication → Sign-in method →** habilita **Email/Password**.
-   - (Opcional) En **Templates** personaliza en español los correos de *verificación* y
-     *restablecimiento de contraseña*.
+   - (Opcional) En **Templates** personaliza en español el correo de *restablecimiento de
+     contraseña*. (La app **no** envía correo de verificación.)
 3. [ ] **Build → Firestore Database → Crear base de datos →** modo **producción** (no "test").
    Elige una región cercana (p. ej. `us-central` / `nam5`).
 4. [ ] **⚙️ Project settings → General → Your apps →** clic en **`</>` (Web)**, registra la
@@ -125,7 +125,7 @@ corepack pnpm dev      # http://localhost:5173
 - [ ] Si ves la pantalla **"FALTA CONFIGURAR FIREBASE"**, revisa el `.env.local`
   (`VITE_FIREBASE_API_KEY` y `VITE_FIREBASE_PROJECT_ID`) y reinicia `pnpm dev`.
 - [ ] Regístrate con el correo del organizador: **`hectorineg10@gmail.com`** (lo necesitas
-  para el paso 8). Revisa que llegue el correo de verificación.
+  para el paso 8). La cuenta queda activa de inmediato (sin verificación por correo).
 
 ---
 
@@ -194,7 +194,7 @@ Valores por defecto (editables en esa pantalla):
 
 Con una cuenta de prueba (un segundo correo, no el de admin):
 
-- [ ] Registro → llega correo de verificación → verificar.
+- [ ] Registro → la cuenta entra directo (sin paso de verificación).
 - [ ] Crear una quiniela principal → guardar (debe aparecer en **Mis Quinielas** como *pendiente*).
 - [ ] Botón de pago abre el Google Form **pre-rellenado** con ID, correo y competencia.
 - [ ] Como **admin**: en **Reporte general**, confirmar el pago de esa quiniela → pasa a *pagada*.

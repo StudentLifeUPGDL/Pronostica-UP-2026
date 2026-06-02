@@ -88,7 +88,7 @@ export function ExplanationsPage({ config }: { config: AppConfig }) {
             Pronostica Pantera es una quiniela del Mundial FIFA 2026, una actividad de la Universidad Panamericana: un torneo de pronósticos deportivos donde cada participante predice los resultados. Ganas puntos cuando tus pronósticos coinciden con los resultados reales.
           </p>
           <BulletItem>Crea <strong>múltiples quinielas</strong> (máx. {config.maxPendingPerUser} con pago pendiente a la vez).</BulletItem>
-          <BulletItem>Accede con tu <strong>correo y contraseña</strong>, con verificación por email.</BulletItem>
+          <BulletItem>Accede con tu <strong>correo y contraseña</strong>.</BulletItem>
           <BulletItem>Los picks deben hacerse <strong>antes del inicio del torneo</strong> (11 junio 2026).</BulletItem>
           <BulletItem>Entra a las <strong>Ligas Aparte</strong> de R32 y R16: torneos independientes de la eliminatoria, sin necesidad de la quiniela principal.</BulletItem>
         </Card>
@@ -97,7 +97,7 @@ export function ExplanationsPage({ config }: { config: AppConfig }) {
         <Card icon={<Target size={16} style={{ color: '#d4f226' }} />} title="¿CÓMO PARTICIPAR?">
           <div className="flex flex-col gap-3">
             {[
-              { step: '1', title: 'Crea tu cuenta', desc: 'Regístrate con tu correo y contraseña, y confirma el correo de verificación que te enviamos.' },
+              { step: '1', title: 'Crea tu cuenta', desc: 'Regístrate con tu correo y contraseña.' },
               { step: '2', title: 'Crea tus quinielas', desc: `En "Mis Pronósticos" crea las quinielas que quieras (máx. ${config.maxPendingPerUser} con pago pendiente a la vez).` },
               { step: '3', title: 'Llena los grupos', desc: 'Para cada grupo A–L, elige qué equipos terminan en 1°, 2° y 3° lugar.' },
               { step: '4', title: 'Pronostica los cruces', desc: 'Avanza por las rondas: dieciséisavos, octavos, cuartos, semis y gran final.' },
