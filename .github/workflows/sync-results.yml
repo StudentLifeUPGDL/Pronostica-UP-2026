@@ -1,0 +1,40 @@
+name: Sync World Cup results
+
+# Pulls the real tournament state from football-data.org and writes the
+# `results/official` Firestore doc. Scores recompute live from that doc, so this
+# is all that needs to run — no per-match data is stored. See scripts/SYNC-RESULTS.md.
+
+on:
+  schedule:
+    # Every 15 min (UTC). The script no-ops cheaply outside the tournament window,
+    # so leaving this on year-round is harmless. GitHub may delay scheduled runs
+    # under load — fine here, scoring only needs final results, not live ticks.
+    - cron: '*/15 * * * *'
+  workflow_dispatch: {}   # lets you trigger a manual refresh from the Actions tab
+
+# Don't pile up overlapping runs if one is slow.
+concurrency:
+  group: sync-results
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # The script only needs firebase-admin (Node 20 has global fetch). Install it
+      # standalone to keep the cron job fast — no full frontend install needed.
+      - name: Install firebase-admin
+        run: npm install --no-save --no-package-lock firebase-admin@^13.10.0
+
+      - name: Sync results
+        env:
+          FOOTBALL_DATA_API_KEY: ${{ secrets.FOOTBALL_DATA_API_KEY }}
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: node scripts/syncResults.mjs --write

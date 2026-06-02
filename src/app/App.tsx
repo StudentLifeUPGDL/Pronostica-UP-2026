@@ -218,7 +218,7 @@ export default function App() {
                 config={config}
               />
             )}
-            {currentPage === 'results' && <ResultsPage />}
+            {currentPage === 'results' && <ResultsPage results={results} />}
             {(currentPage === 'bracket' || currentPage === 'my-predictions') && (
               <MyPredictions
                 predictions={predictions}
@@ -269,7 +269,7 @@ export default function App() {
       <footer style={{ borderTop: '1px solid rgba(255,255,255,0.06)', padding: '16px 24px', textAlign: 'center' }}>
         <div className="h-1 mb-3" style={{ background: 'repeating-linear-gradient(90deg, #f5a623 0px, #f5a623 8px, #d4f226 8px, #d4f226 16px, #0a3d28 16px, #0a3d28 24px)', borderRadius: '999px', maxWidth: '200px', margin: '0 auto 12px' }} />
         <p style={{ color: '#3a6b55', fontSize: '0.72rem', fontFamily: 'DM Mono, monospace', letterSpacing: '0.08em' }}>
-          QUINELA MUNDIAL FIFA 2026 · EE.UU. · CANADÁ · MÉXICO
+          PRONOSTICA PANTERA · MUNDIAL FIFA 2026 · EE.UU. · CANADÁ · MÉXICO
         </p>
       </footer>
     </div>

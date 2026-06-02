@@ -14,10 +14,13 @@ export interface Group {
 
 export interface Match {
   id: string;
+  matchNum?: number;        // official FIFA match number (1–104)
   date: string;
   time: string;
-  homeTeamId: string;
-  awayTeamId: string;
+  homeTeamId: string;       // '' when the team is not yet known (knockout placeholder)
+  awayTeamId: string;       // '' when the team is not yet known
+  homeLabel?: string;       // shown when homeTeamId is '' — e.g. "1° Gr. A", "Ganador P73"
+  awayLabel?: string;       // shown when awayTeamId is '' — e.g. "Mejor 3°", "Ganador P75"
   homeScore?: number;
   awayScore?: number;
   status: 'upcoming' | 'live' | 'finished';
@@ -123,79 +126,93 @@ export const DEFAULT_CONFIG: AppConfig = {
   adminEmails: ['hectorineg10@gmail.com'],
   maxPendingPerUser: 5,
   currency: 'MXN',
-  fees: { main: 100, r32: 50, r16: 50 },
+  fees: { main: 100, r32: 200, r16: 300 },
   payoutPercent: 0.9,
   payoutRoundTo: 100,
 };
 
 // ─── Teams ────────────────────────────────────────────────────────────────────
 
+// The 48 qualified teams of the 2026 FIFA World Cup, listed in their official
+// Final Draw groups (draw held 5 Dec 2025; playoff spots resolved Mar 2026).
 export const TEAMS: Record<string, Team> = {
-  usa: { id: 'usa', name: 'Estados Unidos', shortName: 'EUA', flag: '🇺🇸', confederation: 'CONCACAF' },
-  pan: { id: 'pan', name: 'Panamá',         shortName: 'PAN', flag: '🇵🇦', confederation: 'CONCACAF' },
-  mar: { id: 'mar', name: 'Marruecos',      shortName: 'MAR', flag: '🇲🇦', confederation: 'CAF'      },
-  jpn: { id: 'jpn', name: 'Japón',          shortName: 'JPN', flag: '🇯🇵', confederation: 'AFC'      },
-  mex: { id: 'mex', name: 'México',         shortName: 'MEX', flag: '🇲🇽', confederation: 'CONCACAF' },
-  hon: { id: 'hon', name: 'Honduras',       shortName: 'HON', flag: '🇭🇳', confederation: 'CONCACAF' },
-  cmr: { id: 'cmr', name: 'Camerún',        shortName: 'CMR', flag: '🇨🇲', confederation: 'CAF'      },
-  kor: { id: 'kor', name: 'Corea del Sur',  shortName: 'KOR', flag: '🇰🇷', confederation: 'AFC'      },
-  can: { id: 'can', name: 'Canadá',         shortName: 'CAN', flag: '🇨🇦', confederation: 'CONCACAF' },
-  jam: { id: 'jam', name: 'Jamaica',        shortName: 'JAM', flag: '🇯🇲', confederation: 'CONCACAF' },
-  tun: { id: 'tun', name: 'Túnez',          shortName: 'TUN', flag: '🇹🇳', confederation: 'CAF'      },
-  jor: { id: 'jor', name: 'Jordania',       shortName: 'JOR', flag: '🇯🇴', confederation: 'AFC'      },
-  bra: { id: 'bra', name: 'Brasil',         shortName: 'BRA', flag: '🇧🇷', confederation: 'CONMEBOL' },
-  chi: { id: 'chi', name: 'Chile',          shortName: 'CHI', flag: '🇨🇱', confederation: 'CONMEBOL' },
-  egy: { id: 'egy', name: 'Egipto',         shortName: 'EGY', flag: '🇪🇬', confederation: 'CAF'      },
-  uzb: { id: 'uzb', name: 'Uzbekistán',     shortName: 'UZB', flag: '🇺🇿', confederation: 'AFC'      },
-  arg: { id: 'arg', name: 'Argentina',      shortName: 'ARG', flag: '🇦🇷', confederation: 'CONMEBOL' },
-  ecu: { id: 'ecu', name: 'Ecuador',        shortName: 'ECU', flag: '🇪🇨', confederation: 'CONMEBOL' },
-  nga: { id: 'nga', name: 'Nigeria',        shortName: 'NGA', flag: '🇳🇬', confederation: 'CAF'      },
-  aus: { id: 'aus', name: 'Australia',      shortName: 'AUS', flag: '🇦🇺', confederation: 'AFC'      },
-  esp: { id: 'esp', name: 'España',         shortName: 'ESP', flag: '🇪🇸', confederation: 'UEFA'     },
-  crc: { id: 'crc', name: 'Costa Rica',     shortName: 'CRC', flag: '🇨🇷', confederation: 'CONCACAF' },
-  sen: { id: 'sen', name: 'Senegal',        shortName: 'SEN', flag: '🇸🇳', confederation: 'CAF'      },
-  qat: { id: 'qat', name: 'Qatar',          shortName: 'QAT', flag: '🇶🇦', confederation: 'AFC'      },
-  fra: { id: 'fra', name: 'Francia',        shortName: 'FRA', flag: '🇫🇷', confederation: 'UEFA'     },
-  por: { id: 'por', name: 'Portugal',       shortName: 'POR', flag: '🇵🇹', confederation: 'UEFA'     },
-  gha: { id: 'gha', name: 'Ghana',          shortName: 'GHA', flag: '🇬🇭', confederation: 'CAF'      },
-  nzl: { id: 'nzl', name: 'Nueva Zelanda',  shortName: 'NZL', flag: '🇳🇿', confederation: 'OFC'      },
-  ger: { id: 'ger', name: 'Alemania',       shortName: 'GER', flag: '🇩🇪', confederation: 'UEFA'     },
-  bel: { id: 'bel', name: 'Bélgica',        shortName: 'BEL', flag: '🇧🇪', confederation: 'UEFA'     },
-  rsa: { id: 'rsa', name: 'Sudáfrica',      shortName: 'RSA', flag: '🇿🇦', confederation: 'CAF'      },
-  irn: { id: 'irn', name: 'Irán',           shortName: 'IRN', flag: '🇮🇷', confederation: 'AFC'      },
-  ita: { id: 'ita', name: 'Italia',         shortName: 'ITA', flag: '🇮🇹', confederation: 'UEFA'     },
-  ned: { id: 'ned', name: 'Países Bajos',   shortName: 'NED', flag: '🇳🇱', confederation: 'UEFA'     },
-  civ: { id: 'civ', name: 'Costa de Marfil',shortName: 'CIV', flag: '🇨🇮', confederation: 'CAF'      },
-  kaz: { id: 'kaz', name: 'Kazajistán',     shortName: 'KAZ', flag: '🇰🇿', confederation: 'AFC'      },
-  cro: { id: 'cro', name: 'Croacia',        shortName: 'CRO', flag: '🇭🇷', confederation: 'UEFA'     },
-  sui: { id: 'sui', name: 'Suiza',          shortName: 'SUI', flag: '🇨🇭', confederation: 'UEFA'     },
-  col: { id: 'col', name: 'Colombia',       shortName: 'COL', flag: '🇨🇴', confederation: 'CONMEBOL' },
-  ven: { id: 'ven', name: 'Venezuela',      shortName: 'VEN', flag: '🇻🇪', confederation: 'CONMEBOL' },
-  aut: { id: 'aut', name: 'Austria',        shortName: 'AUT', flag: '🇦🇹', confederation: 'UEFA'     },
-  pol: { id: 'pol', name: 'Polonia',        shortName: 'POL', flag: '🇵🇱', confederation: 'UEFA'     },
-  uru: { id: 'uru', name: 'Uruguay',        shortName: 'URU', flag: '🇺🇾', confederation: 'CONMEBOL' },
-  ksa: { id: 'ksa', name: 'Arabia Saudita', shortName: 'KSA', flag: '🇸🇦', confederation: 'AFC'      },
-  tur: { id: 'tur', name: 'Turquía',        shortName: 'TUR', flag: '🇹🇷', confederation: 'UEFA'     },
-  srb: { id: 'srb', name: 'Serbia',         shortName: 'SRB', flag: '🇷🇸', confederation: 'UEFA'     },
-  den: { id: 'den', name: 'Dinamarca',      shortName: 'DEN', flag: '🇩🇰', confederation: 'UEFA'     },
-  sco: { id: 'sco', name: 'Escocia',        shortName: 'SCO', flag: '🏴󠁧󠁢󠁳󠁣󠁴󠁿', confederation: 'UEFA'     },
+  // Grupo A
+  mex: { id: 'mex', name: 'México',               shortName: 'MEX', flag: '🇲🇽', confederation: 'CONCACAF' },
+  rsa: { id: 'rsa', name: 'Sudáfrica',            shortName: 'RSA', flag: '🇿🇦', confederation: 'CAF'      },
+  kor: { id: 'kor', name: 'Corea del Sur',        shortName: 'KOR', flag: '🇰🇷', confederation: 'AFC'      },
+  cze: { id: 'cze', name: 'República Checa',      shortName: 'CZE', flag: '🇨🇿', confederation: 'UEFA'     },
+  // Grupo B
+  can: { id: 'can', name: 'Canadá',               shortName: 'CAN', flag: '🇨🇦', confederation: 'CONCACAF' },
+  bih: { id: 'bih', name: 'Bosnia y Herzegovina', shortName: 'BIH', flag: '🇧🇦', confederation: 'UEFA'     },
+  qat: { id: 'qat', name: 'Qatar',                shortName: 'QAT', flag: '🇶🇦', confederation: 'AFC'      },
+  sui: { id: 'sui', name: 'Suiza',                shortName: 'SUI', flag: '🇨🇭', confederation: 'UEFA'     },
+  // Grupo C
+  bra: { id: 'bra', name: 'Brasil',               shortName: 'BRA', flag: '🇧🇷', confederation: 'CONMEBOL' },
+  mar: { id: 'mar', name: 'Marruecos',            shortName: 'MAR', flag: '🇲🇦', confederation: 'CAF'      },
+  hai: { id: 'hai', name: 'Haití',                shortName: 'HAI', flag: '🇭🇹', confederation: 'CONCACAF' },
+  sco: { id: 'sco', name: 'Escocia',              shortName: 'SCO', flag: '🏴󠁧󠁢󠁳󠁣󠁴󠁿', confederation: 'UEFA'     },
+  // Grupo D
+  usa: { id: 'usa', name: 'Estados Unidos',       shortName: 'EUA', flag: '🇺🇸', confederation: 'CONCACAF' },
+  par: { id: 'par', name: 'Paraguay',             shortName: 'PAR', flag: '🇵🇾', confederation: 'CONMEBOL' },
+  aus: { id: 'aus', name: 'Australia',            shortName: 'AUS', flag: '🇦🇺', confederation: 'AFC'      },
+  tur: { id: 'tur', name: 'Turquía',              shortName: 'TUR', flag: '🇹🇷', confederation: 'UEFA'     },
+  // Grupo E
+  ger: { id: 'ger', name: 'Alemania',             shortName: 'GER', flag: '🇩🇪', confederation: 'UEFA'     },
+  cuw: { id: 'cuw', name: 'Curazao',              shortName: 'CUW', flag: '🇨🇼', confederation: 'CONCACAF' },
+  civ: { id: 'civ', name: 'Costa de Marfil',      shortName: 'CIV', flag: '🇨🇮', confederation: 'CAF'      },
+  ecu: { id: 'ecu', name: 'Ecuador',              shortName: 'ECU', flag: '🇪🇨', confederation: 'CONMEBOL' },
+  // Grupo F
+  ned: { id: 'ned', name: 'Países Bajos',         shortName: 'NED', flag: '🇳🇱', confederation: 'UEFA'     },
+  jpn: { id: 'jpn', name: 'Japón',                shortName: 'JPN', flag: '🇯🇵', confederation: 'AFC'      },
+  swe: { id: 'swe', name: 'Suecia',               shortName: 'SWE', flag: '🇸🇪', confederation: 'UEFA'     },
+  tun: { id: 'tun', name: 'Túnez',                shortName: 'TUN', flag: '🇹🇳', confederation: 'CAF'      },
+  // Grupo G
+  bel: { id: 'bel', name: 'Bélgica',              shortName: 'BEL', flag: '🇧🇪', confederation: 'UEFA'     },
+  egy: { id: 'egy', name: 'Egipto',               shortName: 'EGY', flag: '🇪🇬', confederation: 'CAF'      },
+  irn: { id: 'irn', name: 'Irán',                 shortName: 'IRN', flag: '🇮🇷', confederation: 'AFC'      },
+  nzl: { id: 'nzl', name: 'Nueva Zelanda',        shortName: 'NZL', flag: '🇳🇿', confederation: 'OFC'      },
+  // Grupo H
+  esp: { id: 'esp', name: 'España',               shortName: 'ESP', flag: '🇪🇸', confederation: 'UEFA'     },
+  cpv: { id: 'cpv', name: 'Cabo Verde',           shortName: 'CPV', flag: '🇨🇻', confederation: 'CAF'      },
+  ksa: { id: 'ksa', name: 'Arabia Saudita',       shortName: 'KSA', flag: '🇸🇦', confederation: 'AFC'      },
+  uru: { id: 'uru', name: 'Uruguay',              shortName: 'URU', flag: '🇺🇾', confederation: 'CONMEBOL' },
+  // Grupo I
+  fra: { id: 'fra', name: 'Francia',              shortName: 'FRA', flag: '🇫🇷', confederation: 'UEFA'     },
+  sen: { id: 'sen', name: 'Senegal',              shortName: 'SEN', flag: '🇸🇳', confederation: 'CAF'      },
+  irq: { id: 'irq', name: 'Irak',                 shortName: 'IRQ', flag: '🇮🇶', confederation: 'AFC'      },
+  nor: { id: 'nor', name: 'Noruega',              shortName: 'NOR', flag: '🇳🇴', confederation: 'UEFA'     },
+  // Grupo J
+  arg: { id: 'arg', name: 'Argentina',            shortName: 'ARG', flag: '🇦🇷', confederation: 'CONMEBOL' },
+  alg: { id: 'alg', name: 'Argelia',              shortName: 'ALG', flag: '🇩🇿', confederation: 'CAF'      },
+  aut: { id: 'aut', name: 'Austria',              shortName: 'AUT', flag: '🇦🇹', confederation: 'UEFA'     },
+  jor: { id: 'jor', name: 'Jordania',             shortName: 'JOR', flag: '🇯🇴', confederation: 'AFC'      },
+  // Grupo K
+  por: { id: 'por', name: 'Portugal',             shortName: 'POR', flag: '🇵🇹', confederation: 'UEFA'     },
+  cod: { id: 'cod', name: 'RD Congo',             shortName: 'COD', flag: '🇨🇩', confederation: 'CAF'      },
+  uzb: { id: 'uzb', name: 'Uzbekistán',           shortName: 'UZB', flag: '🇺🇿', confederation: 'AFC'      },
+  col: { id: 'col', name: 'Colombia',             shortName: 'COL', flag: '🇨🇴', confederation: 'CONMEBOL' },
+  // Grupo L
+  eng: { id: 'eng', name: 'Inglaterra',           shortName: 'ENG', flag: '🏴󠁧󠁢󠁥󠁮󠁧󠁿', confederation: 'UEFA'     },
+  cro: { id: 'cro', name: 'Croacia',              shortName: 'CRO', flag: '🇭🇷', confederation: 'UEFA'     },
+  gha: { id: 'gha', name: 'Ghana',                shortName: 'GHA', flag: '🇬🇭', confederation: 'CAF'      },
+  pan: { id: 'pan', name: 'Panamá',               shortName: 'PAN', flag: '🇵🇦', confederation: 'CONCACAF' },
 };
 
 // ─── Groups ───────────────────────────────────────────────────────────────────
 
 export const GROUPS: Group[] = [
-  { id: 'A', name: 'Grupo A', teams: [TEAMS.usa, TEAMS.pan, TEAMS.mar, TEAMS.jpn] },
-  { id: 'B', name: 'Grupo B', teams: [TEAMS.mex, TEAMS.hon, TEAMS.cmr, TEAMS.kor] },
-  { id: 'C', name: 'Grupo C', teams: [TEAMS.can, TEAMS.jam, TEAMS.tun, TEAMS.jor] },
-  { id: 'D', name: 'Grupo D', teams: [TEAMS.bra, TEAMS.chi, TEAMS.egy, TEAMS.uzb] },
-  { id: 'E', name: 'Grupo E', teams: [TEAMS.arg, TEAMS.ecu, TEAMS.nga, TEAMS.aus] },
-  { id: 'F', name: 'Grupo F', teams: [TEAMS.esp, TEAMS.crc, TEAMS.sen, TEAMS.qat] },
-  { id: 'G', name: 'Grupo G', teams: [TEAMS.fra, TEAMS.por, TEAMS.gha, TEAMS.nzl] },
-  { id: 'H', name: 'Grupo H', teams: [TEAMS.ger, TEAMS.bel, TEAMS.rsa, TEAMS.irn] },
-  { id: 'I', name: 'Grupo I', teams: [TEAMS.ita, TEAMS.ned, TEAMS.civ, TEAMS.kaz] },
-  { id: 'J', name: 'Grupo J', teams: [TEAMS.cro, TEAMS.sui, TEAMS.col, TEAMS.ven] },
-  { id: 'K', name: 'Grupo K', teams: [TEAMS.aut, TEAMS.pol, TEAMS.uru, TEAMS.ksa] },
-  { id: 'L', name: 'Grupo L', teams: [TEAMS.tur, TEAMS.srb, TEAMS.den, TEAMS.sco] },
+  { id: 'A', name: 'Grupo A', teams: [TEAMS.mex, TEAMS.rsa, TEAMS.kor, TEAMS.cze] },
+  { id: 'B', name: 'Grupo B', teams: [TEAMS.can, TEAMS.bih, TEAMS.qat, TEAMS.sui] },
+  { id: 'C', name: 'Grupo C', teams: [TEAMS.bra, TEAMS.mar, TEAMS.hai, TEAMS.sco] },
+  { id: 'D', name: 'Grupo D', teams: [TEAMS.usa, TEAMS.par, TEAMS.aus, TEAMS.tur] },
+  { id: 'E', name: 'Grupo E', teams: [TEAMS.ger, TEAMS.cuw, TEAMS.civ, TEAMS.ecu] },
+  { id: 'F', name: 'Grupo F', teams: [TEAMS.ned, TEAMS.jpn, TEAMS.swe, TEAMS.tun] },
+  { id: 'G', name: 'Grupo G', teams: [TEAMS.bel, TEAMS.egy, TEAMS.irn, TEAMS.nzl] },
+  { id: 'H', name: 'Grupo H', teams: [TEAMS.esp, TEAMS.cpv, TEAMS.ksa, TEAMS.uru] },
+  { id: 'I', name: 'Grupo I', teams: [TEAMS.fra, TEAMS.sen, TEAMS.irq, TEAMS.nor] },
+  { id: 'J', name: 'Grupo J', teams: [TEAMS.arg, TEAMS.alg, TEAMS.aut, TEAMS.jor] },
+  { id: 'K', name: 'Grupo K', teams: [TEAMS.por, TEAMS.cod, TEAMS.uzb, TEAMS.col] },
+  { id: 'L', name: 'Grupo L', teams: [TEAMS.eng, TEAMS.cro, TEAMS.gha, TEAMS.pan] },
 ];
 
 // ─── Official Round of 32 bracket ─────────────────────────────────────────────
@@ -208,96 +225,100 @@ export interface OfficialR32Match {
   id: string;
   matchNum: number;
   date: string;
+  time: string;     // kickoff in Ciudad de México time (UTC-6)
   stadium: string;
   home: TeamSlot;
   away: TeamSlot;
 }
 
+// Dates, venues and kickoff times are from FIFA's official match schedule.
+// FIFA publishes all times in U.S. Eastern Time; here they are shown in Ciudad
+// de México time (UTC-6, i.e. ET − 2h during the tournament in late Jun/Jul).
 export const OFFICIAL_R32: OfficialR32Match[] = [
   // Jun 28
   {
-    id: 'p73', matchNum: 73, date: '28 jun', stadium: 'Los Ángeles',
+    id: 'p73', matchNum: 73, date: '28 jun', time: '13:00', stadium: 'Los Ángeles',
     home: { type: 'pos', group: 'A', pos: 2 },
     away: { type: 'pos', group: 'B', pos: 2 },
   },
   // Jun 29
   {
-    id: 'p74', matchNum: 74, date: '29 jun', stadium: 'Boston',
+    id: 'p74', matchNum: 74, date: '29 jun', time: '14:30', stadium: 'Boston',
     home: { type: 'pos', group: 'E', pos: 1 },
     away: { type: 'best3rd', eligibleGroups: ['A','B','C','D','F'] },
   },
   {
-    id: 'p75', matchNum: 75, date: '29 jun', stadium: 'Monterrey',
+    id: 'p75', matchNum: 75, date: '29 jun', time: '19:00', stadium: 'Monterrey',
     home: { type: 'pos', group: 'F', pos: 1 },
     away: { type: 'pos', group: 'C', pos: 2 },
   },
   {
     // Note: original data had "1º E" but E is already in p74 — corrected to 1º C
-    id: 'p76', matchNum: 76, date: '29 jun', stadium: 'Houston',
+    id: 'p76', matchNum: 76, date: '29 jun', time: '11:00', stadium: 'Houston',
     home: { type: 'pos', group: 'C', pos: 1 },
     away: { type: 'pos', group: 'F', pos: 2 },
   },
   // Jun 30
   {
-    id: 'p77', matchNum: 77, date: '30 jun', stadium: 'Nueva York / Nueva Jersey',
+    id: 'p77', matchNum: 77, date: '30 jun', time: '15:00', stadium: 'Nueva York / Nueva Jersey',
     home: { type: 'pos', group: 'I', pos: 1 },
     away: { type: 'best3rd', eligibleGroups: ['C','D','F','G','H'] },
   },
   {
-    id: 'p78', matchNum: 78, date: '30 jun', stadium: 'Dallas',
+    id: 'p78', matchNum: 78, date: '30 jun', time: '11:00', stadium: 'Dallas',
     home: { type: 'pos', group: 'E', pos: 2 },
     away: { type: 'pos', group: 'I', pos: 2 },
   },
   {
-    id: 'p79', matchNum: 79, date: '30 jun', stadium: 'Azteca — Ciudad de México',
+    id: 'p79', matchNum: 79, date: '30 jun', time: '19:00', stadium: 'Azteca — Ciudad de México',
     home: { type: 'pos', group: 'A', pos: 1 },
     away: { type: 'best3rd', eligibleGroups: ['C','E','F','H','I'] },
   },
   // Jul 1
   {
-    id: 'p80', matchNum: 80, date: '1 jul', stadium: 'Atlanta',
+    id: 'p80', matchNum: 80, date: '1 jul', time: '10:00', stadium: 'Atlanta',
     home: { type: 'pos', group: 'L', pos: 1 },
     away: { type: 'best3rd', eligibleGroups: ['E','H','I','J','K'] },
   },
   {
-    id: 'p81', matchNum: 81, date: '1 jul', stadium: 'Bahía de San Francisco',
+    id: 'p81', matchNum: 81, date: '1 jul', time: '18:00', stadium: 'Bahía de San Francisco',
     home: { type: 'pos', group: 'D', pos: 1 },
     away: { type: 'best3rd', eligibleGroups: ['B','E','F','I','J'] },
   },
   {
-    id: 'p82', matchNum: 82, date: '1 jul', stadium: 'Seattle',
+    id: 'p82', matchNum: 82, date: '1 jul', time: '14:00', stadium: 'Seattle',
     home: { type: 'pos', group: 'G', pos: 1 },
     away: { type: 'best3rd', eligibleGroups: ['A','E','H','I','J'] },
   },
   // Jul 2
   {
-    id: 'p83', matchNum: 83, date: '2 jul', stadium: 'Toronto',
+    id: 'p83', matchNum: 83, date: '2 jul', time: '17:00', stadium: 'Toronto',
     home: { type: 'pos', group: 'K', pos: 2 },
     away: { type: 'pos', group: 'L', pos: 2 },
   },
   {
-    id: 'p84', matchNum: 84, date: '2 jul', stadium: 'Los Ángeles',
+    id: 'p84', matchNum: 84, date: '2 jul', time: '13:00', stadium: 'Los Ángeles',
     home: { type: 'pos', group: 'H', pos: 1 },
     away: { type: 'pos', group: 'J', pos: 2 },
   },
   {
-    id: 'p85', matchNum: 85, date: '2 jul', stadium: 'BC Place Vancouver',
+    id: 'p85', matchNum: 85, date: '2 jul', time: '21:00', stadium: 'BC Place Vancouver',
     home: { type: 'pos', group: 'B', pos: 1 },
     away: { type: 'best3rd', eligibleGroups: ['E','F','G','I','J'] },
   },
   // Jul 3
   {
-    id: 'p86', matchNum: 86, date: '3 jul', stadium: 'Miami',
+    id: 'p86', matchNum: 86, date: '3 jul', time: '16:00', stadium: 'Miami',
     home: { type: 'pos', group: 'J', pos: 1 },
     away: { type: 'pos', group: 'H', pos: 2 },
   },
   {
-    id: 'p87', matchNum: 87, date: '3 jul', stadium: 'Kansas City',
+    id: 'p87', matchNum: 87, date: '3 jul', time: '19:30', stadium: 'Kansas City',
     home: { type: 'pos', group: 'K', pos: 1 },
     away: { type: 'best3rd', eligibleGroups: ['D','E','I','J','L'] },
   },
   {
-    id: 'p88', matchNum: 88, date: '3 jul', stadium: 'Dallas',
+    id: 'p88', matchNum: 88, date: '3 jul', time: '12:00', stadium: 'Dallas',
     home: { type: 'pos', group: 'D', pos: 2 },
     away: { type: 'pos', group: 'G', pos: 2 },
   },
@@ -308,43 +329,226 @@ export const BEST3RD_MATCH_IDS = OFFICIAL_R32
   .filter(m => m.away.type === 'best3rd')
   .map(m => m.id);
 
-// ─── Simplified knockout brackets (built from R32 results) ────────────────────
+// ─── Knockout brackets (official FIFA bracket, match numbers 89–104) ───────────
+// The pairings below follow FIFA's published bracket exactly — they are NOT a
+// "two consecutive matches feed the next" simplification. Times are kickoff in
+// Ciudad de México (UTC-6); FIFA publishes them in U.S. Eastern Time (ET = CDMX + 2h).
 
-export const R16_PAIRS = [
-  { id: 'r16-1', r32a: 'p73', r32b: 'p74' },
-  { id: 'r16-2', r32a: 'p75', r32b: 'p76' },
-  { id: 'r16-3', r32a: 'p77', r32b: 'p78' },
-  { id: 'r16-4', r32a: 'p79', r32b: 'p80' },
-  { id: 'r16-5', r32a: 'p81', r32b: 'p82' },
-  { id: 'r16-6', r32a: 'p83', r32b: 'p84' },
-  { id: 'r16-7', r32a: 'p85', r32b: 'p86' },
-  { id: 'r16-8', r32a: 'p87', r32b: 'p88' },
+export interface R16Pair {
+  id: string; matchNum: number; date: string; time: string; stadium: string;
+  r32a: string; r32b: string;  // the two R32 matches whose winners meet here
+}
+export const R16_PAIRS: R16Pair[] = [
+  { id: 'r16-1', matchNum: 89, date: '4 jul', time: '15:00', stadium: 'Filadelfia',                 r32a: 'p74', r32b: 'p77' },
+  { id: 'r16-2', matchNum: 90, date: '4 jul', time: '11:00', stadium: 'Houston',                    r32a: 'p73', r32b: 'p75' },
+  { id: 'r16-3', matchNum: 91, date: '5 jul', time: '14:00', stadium: 'Nueva York / Nueva Jersey',  r32a: 'p76', r32b: 'p78' },
+  { id: 'r16-4', matchNum: 92, date: '5 jul', time: '18:00', stadium: 'Azteca — Ciudad de México',  r32a: 'p79', r32b: 'p80' },
+  { id: 'r16-5', matchNum: 93, date: '6 jul', time: '13:00', stadium: 'Dallas',                     r32a: 'p83', r32b: 'p84' },
+  { id: 'r16-6', matchNum: 94, date: '6 jul', time: '18:00', stadium: 'Seattle',                    r32a: 'p81', r32b: 'p82' },
+  { id: 'r16-7', matchNum: 95, date: '7 jul', time: '10:00', stadium: 'Atlanta',                    r32a: 'p86', r32b: 'p88' },
+  { id: 'r16-8', matchNum: 96, date: '7 jul', time: '14:00', stadium: 'BC Place Vancouver',         r32a: 'p85', r32b: 'p87' },
 ];
 
-export const QF_PAIRS = [
-  { id: 'qf-1', r16a: 'r16-1', r16b: 'r16-2' },
-  { id: 'qf-2', r16a: 'r16-3', r16b: 'r16-4' },
-  { id: 'qf-3', r16a: 'r16-5', r16b: 'r16-6' },
-  { id: 'qf-4', r16a: 'r16-7', r16b: 'r16-8' },
+export interface QFPair {
+  id: string; matchNum: number; date: string; time: string; stadium: string;
+  r16a: string; r16b: string;
+}
+export const QF_PAIRS: QFPair[] = [
+  { id: 'qf-1', matchNum: 97,  date: '9 jul',  time: '14:00', stadium: 'Boston',      r16a: 'r16-1', r16b: 'r16-2' },
+  { id: 'qf-2', matchNum: 98,  date: '10 jul', time: '13:00', stadium: 'Los Ángeles', r16a: 'r16-5', r16b: 'r16-6' },
+  { id: 'qf-3', matchNum: 99,  date: '11 jul', time: '15:00', stadium: 'Miami',       r16a: 'r16-3', r16b: 'r16-4' },
+  { id: 'qf-4', matchNum: 100, date: '11 jul', time: '19:00', stadium: 'Kansas City', r16a: 'r16-7', r16b: 'r16-8' },
 ];
 
-export const SF_PAIRS = [
-  { id: 'sf-1', qfa: 'qf-1', qfb: 'qf-2' },
-  { id: 'sf-2', qfa: 'qf-3', qfb: 'qf-4' },
+export interface SFPair {
+  id: string; matchNum: number; date: string; time: string; stadium: string;
+  qfa: string; qfb: string;
+}
+export const SF_PAIRS: SFPair[] = [
+  { id: 'sf-1', matchNum: 101, date: '14 jul', time: '13:00', stadium: 'Dallas',  qfa: 'qf-1', qfb: 'qf-2' },
+  { id: 'sf-2', matchNum: 102, date: '15 jul', time: '13:00', stadium: 'Atlanta', qfa: 'qf-3', qfb: 'qf-4' },
 ];
+
+export interface KnockoutInfo { matchNum: number; date: string; time: string; stadium: string; }
+// Third-place match: losers of sf-1 and sf-2.
+export const BRONZE_INFO: KnockoutInfo = { matchNum: 103, date: '18 jul', time: '15:00', stadium: 'Miami' };
+// Final: winners of sf-1 and sf-2.
+export const FINAL_INFO: KnockoutInfo = { matchNum: 104, date: '19 jul', time: '13:00', stadium: 'MetLife — Nueva York / Nueva Jersey' };
 
 // ─── Match schedule ───────────────────────────────────────────────────────────
+// The complete 104-match calendar is GENERATED from a single source of truth so it
+// can never drift out of sync:
+//   • Group stage (matches 1–72): every group's full round-robin, built from GROUPS
+//     using FIFA's fixed fixture pattern (MD1 1v2 / 3v4 · MD2 1v3 / 4v2 · MD3 4v1 / 2v3).
+//   • Knockout (matches 73–104): built from the official bracket above. Teams aren't
+//     known yet, so each side carries a PLACEHOLDER label ("1° Gr. A", "Mejor 3°",
+//     "Ganador P73"). As real group results are entered, R32 position slots auto-fill
+//     with the actual teams; deeper rounds keep their placeholders until played.
 
-export const UPCOMING_MATCHES: Match[] = [
-  { id: 'm1', date: '11 jun', time: '14:00', homeTeamId: 'mex', awayTeamId: 'hon', status: 'upcoming', group: 'B', city: 'Ciudad de México', round: 'Fase de Grupos' },
-  { id: 'm2', date: '11 jun', time: '17:00', homeTeamId: 'usa', awayTeamId: 'pan', status: 'upcoming', group: 'A', city: 'Los Ángeles',      round: 'Fase de Grupos' },
-  { id: 'm3', date: '11 jun', time: '20:00', homeTeamId: 'can', awayTeamId: 'jam', status: 'upcoming', group: 'C', city: 'Toronto',           round: 'Fase de Grupos' },
-  { id: 'm4', date: '12 jun', time: '12:00', homeTeamId: 'arg', awayTeamId: 'ecu', status: 'upcoming', group: 'E', city: 'Nueva York',        round: 'Fase de Grupos' },
-  { id: 'm5', date: '12 jun', time: '15:00', homeTeamId: 'bra', awayTeamId: 'chi', status: 'upcoming', group: 'D', city: 'Dallas',            round: 'Fase de Grupos' },
-  { id: 'm6', date: '12 jun', time: '18:00', homeTeamId: 'esp', awayTeamId: 'crc', status: 'upcoming', group: 'F', city: 'Miami',             round: 'Fase de Grupos' },
-  { id: 'm7', date: '13 jun', time: '14:00', homeTeamId: 'fra', awayTeamId: 'por', status: 'upcoming', group: 'G', city: 'San Francisco',     round: 'Fase de Grupos' },
-  { id: 'm8', date: '13 jun', time: '17:00', homeTeamId: 'ger', awayTeamId: 'bel', status: 'upcoming', group: 'H', city: 'Atlanta',           round: 'Fase de Grupos' },
+export const ROUND_GROUP  = 'Fase de Grupos';
+export const ROUND_R32    = 'Dieciseisavos de Final';
+export const ROUND_R16    = 'Octavos de Final';
+export const ROUND_QF     = 'Cuartos de Final';
+export const ROUND_SF     = 'Semifinales';
+export const ROUND_BRONZE = 'Tercer Lugar';
+export const ROUND_FINAL  = 'Final';
+
+// Display order of the phases (used to group the full match list in the UI).
+export const PHASE_ORDER = [
+  ROUND_GROUP, ROUND_R32, ROUND_R16, ROUND_QF, ROUND_SF, ROUND_BRONZE, ROUND_FINAL,
+] as const;
+
+// The 16 official host cities, cycled through for generated group-stage venues.
+const HOST_CITIES = [
+  'Ciudad de México', 'Guadalajara', 'Monterrey', 'Los Ángeles', 'San Francisco',
+  'Seattle', 'Vancouver', 'Toronto', 'Kansas City', 'Dallas', 'Houston', 'Atlanta',
+  'Miami', 'Filadelfia', 'Boston', 'Nueva York',
 ];
+
+// Matchday date blocks — 3 groups share a day (A,B,C · D,E,F · G,H,I · J,K,L).
+const MD_DATES: Record<number, string[]> = {
+  1: ['11 jun', '12 jun', '13 jun', '14 jun'],
+  2: ['18 jun', '19 jun', '20 jun', '21 jun'],
+  3: ['24 jun', '25 jun', '26 jun', '27 jun'],
+};
+const KICKOFFS = [['11:00', '19:00'], ['14:00', '21:00'], ['16:00', '18:00']]; // [daySlot][submatch]
+
+// Verbatim dates/times/venues for the 8 originally-listed opening matches, keyed by
+// `${group}${matchday}${submatch}`. Pairings already match the generated round-robin.
+const GROUP_OVERRIDES: Record<string, { date: string; time: string; city: string }> = {
+  A10: { date: '11 jun', time: '17:00', city: 'Los Ángeles' },
+  B10: { date: '11 jun', time: '14:00', city: 'Ciudad de México' },
+  C10: { date: '11 jun', time: '20:00', city: 'Toronto' },
+  D10: { date: '12 jun', time: '15:00', city: 'Dallas' },
+  E10: { date: '12 jun', time: '12:00', city: 'Nueva York' },
+  F10: { date: '12 jun', time: '18:00', city: 'Miami' },
+  G10: { date: '13 jun', time: '14:00', city: 'San Francisco' },
+  H10: { date: '13 jun', time: '17:00', city: 'Atlanta' },
+};
+
+// FIFA's fixed round-robin: returns [homeId, awayId] for a group, matchday (1–3) and
+// submatch (0 or 1). Teams are positions 1–4 = group.teams[0..3].
+function roundRobinPairing(teams: Team[], md: number, sub: number): [string, string] {
+  const [a, b, c, d] = teams.map(t => t.id);
+  if (md === 1) return sub === 0 ? [a, b] : [c, d];
+  if (md === 2) return sub === 0 ? [a, c] : [d, b];
+  return sub === 0 ? [d, a] : [b, c]; // md 3
+}
+
+// Build all 72 group-stage matches (always have concrete teams).
+export function buildGroupStageMatches(): Match[] {
+  const out: Match[] = [];
+  GROUPS.forEach((g, gi) => {
+    const dayBlock = Math.floor(gi / 3);
+    const daySlot = gi % 3;
+    for (let md = 1; md <= 3; md++) {
+      for (let sub = 0; sub <= 1; sub++) {
+        const [homeTeamId, awayTeamId] = roundRobinPairing(g.teams, md, sub);
+        const matchNum = (md - 1) * 24 + gi * 2 + sub + 1;
+        const ov = GROUP_OVERRIDES[`${g.id}${md}${sub}`];
+        out.push({
+          id: `g${matchNum}`,
+          matchNum,
+          date: ov?.date ?? MD_DATES[md][dayBlock],
+          time: ov?.time ?? KICKOFFS[daySlot][sub],
+          homeTeamId,
+          awayTeamId,
+          status: 'upcoming',
+          group: g.id,
+          round: ROUND_GROUP,
+          city: ov?.city ?? HOST_CITIES[(matchNum - 1) % HOST_CITIES.length],
+        });
+      }
+    }
+  });
+  return out.sort((a, b) => (a.matchNum! - b.matchNum!));
+}
+
+// id → official match number, across every knockout round.
+const KO_MATCH_NUM: Record<string, number> = {};
+OFFICIAL_R32.forEach(m => { KO_MATCH_NUM[m.id] = m.matchNum; });
+R16_PAIRS.forEach(p => { KO_MATCH_NUM[p.id] = p.matchNum; });
+QF_PAIRS.forEach(p => { KO_MATCH_NUM[p.id] = p.matchNum; });
+SF_PAIRS.forEach(p => { KO_MATCH_NUM[p.id] = p.matchNum; });
+
+// Human placeholder for an R32 slot, e.g. "1° Gr. A" or "Mejor 3° (A/B/C/D/F)".
+function slotLabel(slot: TeamSlot): string {
+  return slot.type === 'pos'
+    ? `${slot.pos}° Gr. ${slot.group}`
+    : `Mejor 3° (${slot.eligibleGroups.join('/')})`;
+}
+
+// Resolve the actual team in an R32 slot from the entered group results, when known.
+// Only position slots (1°/2°) are determinable from Results; best-3rd slots stay open
+// because Results doesn't record which thirds advanced.
+function slotTeam(slot: TeamSlot, results?: Results): string {
+  if (slot.type !== 'pos' || !results) return '';
+  const gr = results.groups[slot.group];
+  if (!gr) return '';
+  return (slot.pos === 1 ? gr.first : gr.second) ?? '';
+}
+
+// Build all knockout matches (73–104) with placeholders, auto-filling R32 teams from
+// group results when available.
+export function buildKnockoutMatches(results?: Results): Match[] {
+  const out: Match[] = [];
+
+  OFFICIAL_R32.forEach(m => {
+    out.push({
+      id: m.id, matchNum: m.matchNum, date: m.date, time: m.time,
+      homeTeamId: slotTeam(m.home, results), awayTeamId: slotTeam(m.away, results),
+      homeLabel: slotLabel(m.home), awayLabel: slotLabel(m.away),
+      status: 'upcoming', round: ROUND_R32, city: m.stadium,
+    });
+  });
+
+  R16_PAIRS.forEach(p => out.push({
+    id: p.id, matchNum: p.matchNum, date: p.date, time: p.time,
+    homeTeamId: '', awayTeamId: '',
+    homeLabel: `Ganador P${KO_MATCH_NUM[p.r32a]}`, awayLabel: `Ganador P${KO_MATCH_NUM[p.r32b]}`,
+    status: 'upcoming', round: ROUND_R16, city: p.stadium,
+  }));
+
+  QF_PAIRS.forEach(p => out.push({
+    id: p.id, matchNum: p.matchNum, date: p.date, time: p.time,
+    homeTeamId: '', awayTeamId: '',
+    homeLabel: `Ganador P${KO_MATCH_NUM[p.r16a]}`, awayLabel: `Ganador P${KO_MATCH_NUM[p.r16b]}`,
+    status: 'upcoming', round: ROUND_QF, city: p.stadium,
+  }));
+
+  SF_PAIRS.forEach(p => out.push({
+    id: p.id, matchNum: p.matchNum, date: p.date, time: p.time,
+    homeTeamId: '', awayTeamId: '',
+    homeLabel: `Ganador P${KO_MATCH_NUM[p.qfa]}`, awayLabel: `Ganador P${KO_MATCH_NUM[p.qfb]}`,
+    status: 'upcoming', round: ROUND_SF, city: p.stadium,
+  }));
+
+  out.push({
+    id: 'bronze', matchNum: BRONZE_INFO.matchNum, date: BRONZE_INFO.date, time: BRONZE_INFO.time,
+    homeTeamId: '', awayTeamId: '',
+    homeLabel: `Perdedor P${SF_PAIRS[0].matchNum}`, awayLabel: `Perdedor P${SF_PAIRS[1].matchNum}`,
+    status: 'upcoming', round: ROUND_BRONZE, city: BRONZE_INFO.stadium,
+  });
+
+  out.push({
+    id: 'final', matchNum: FINAL_INFO.matchNum, date: FINAL_INFO.date, time: FINAL_INFO.time,
+    homeTeamId: '', awayTeamId: '',
+    homeLabel: `Ganador P${SF_PAIRS[0].matchNum}`, awayLabel: `Ganador P${SF_PAIRS[1].matchNum}`,
+    status: 'upcoming', round: ROUND_FINAL, city: FINAL_INFO.stadium,
+  });
+
+  return out;
+}
+
+// The complete tournament calendar (group stage + knockout), ordered by match number.
+// Pass live results to auto-fill R32 teams as group placements get entered.
+export function buildSchedule(results?: Results): Match[] {
+  return [...buildGroupStageMatches(), ...buildKnockoutMatches(results)];
+}
+
+// Static, results-agnostic snapshots for convenience.
+export const GROUP_STAGE_MATCHES: Match[] = buildGroupStageMatches();
+export const FULL_SCHEDULE: Match[] = buildSchedule();
 
 // ─── Mock data ────────────────────────────────────────────────────────────────
 

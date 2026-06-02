@@ -1,12 +1,30 @@
 import { useState } from 'react';
 import { CheckCircle2, Clock, Trophy } from 'lucide-react';
-import { GROUPS, UPCOMING_MATCHES, getTeam } from '../data/worldcup';
+import { GROUPS, buildSchedule, getTeam, PHASE_ORDER, type Match, type Results, EMPTY_RESULTS } from '../data/worldcup';
 
 type Tab = 'grupos' | 'partidos' | 'clasificados';
 
-export function ResultsPage() {
+// One side of a match row: a resolved team, or a placeholder label when unknown.
+function MatchSide({ teamId, label, align }: { teamId: string; label?: string; align: 'left' | 'right' }) {
+  const team = teamId ? getTeam(teamId) : null;
+  const rowClass = align === 'right' ? 'flex items-center gap-2 flex-1 justify-end' : 'flex items-center gap-2 flex-1';
+  const flag = <span className="text-xl">{team ? team.flag : '⏳'}</span>;
+  const name = team
+    ? <span style={{ color: '#e0f0e8', fontSize: '0.88rem', fontFamily: 'Nunito Sans, sans-serif', fontWeight: 600 }}>{team.name}</span>
+    : <span style={{ color: '#7eb89a', fontSize: '0.82rem', fontFamily: 'DM Mono, monospace', fontStyle: 'italic' }}>{label}</span>;
+  return <div className={rowClass}>{align === 'right' ? <>{name}{flag}</> : <>{flag}{name}</>}</div>;
+}
+
+export function ResultsPage({ results = EMPTY_RESULTS }: { results?: Results }) {
   const [activeTab, setActiveTab] = useState<Tab>('partidos');
   const [activeGroup, setActiveGroup] = useState('A');
+
+  // Full calendar; R32 teams auto-fill from entered group results, deeper rounds stay
+  // as placeholders until played. Grouped by phase for display.
+  const schedule = buildSchedule(results);
+  const byPhase = PHASE_ORDER
+    .map(phase => ({ phase, matches: schedule.filter(m => m.round === phase) }))
+    .filter(p => p.matches.length > 0);
 
   const tabs: { id: Tab; label: string }[] = [
     { id: 'partidos', label: 'PARTIDOS' },
@@ -15,11 +33,11 @@ export function ResultsPage() {
   ];
 
   const allConfTeams = {
-    'CONCACAF': ['usa', 'can', 'mex', 'pan', 'crc', 'hon', 'jam'],
-    'CONMEBOL': ['arg', 'bra', 'col', 'ecu', 'chi', 'uru', 'ven'],
-    'UEFA': ['esp', 'fra', 'ger', 'por', 'ned', 'ita', 'bel', 'cro', 'sui', 'pol', 'aut', 'tur', 'srb', 'den', 'sco'],
-    'CAF': ['mar', 'nga', 'sen', 'rsa', 'cmr', 'egy', 'tun', 'gha', 'civ'],
-    'AFC': ['jpn', 'kor', 'irn', 'ksa', 'aus', 'uzb', 'jor', 'qat', 'kaz'],
+    'CONCACAF': ['usa', 'can', 'mex', 'pan', 'hai', 'cuw'],
+    'CONMEBOL': ['arg', 'bra', 'col', 'ecu', 'uru', 'par'],
+    'UEFA': ['esp', 'fra', 'ger', 'por', 'ned', 'bel', 'cro', 'sui', 'aut', 'tur', 'sco', 'eng', 'cze', 'bih', 'swe', 'nor'],
+    'CAF': ['mar', 'sen', 'rsa', 'egy', 'tun', 'gha', 'civ', 'cpv', 'alg', 'cod'],
+    'AFC': ['jpn', 'kor', 'irn', 'ksa', 'aus', 'uzb', 'jor', 'qat', 'irq'],
     'OFC': ['nzl'],
   };
 
@@ -73,57 +91,54 @@ export function ResultsPage() {
         ))}
       </div>
 
-      {/* Tab: Partidos */}
+      {/* Tab: Partidos — complete 104-match calendar, grouped by phase */}
       {activeTab === 'partidos' && (
-        <div className="rounded-xl overflow-hidden" style={{ background: '#0d5035', border: '1px solid rgba(255,255,255,0.07)' }}>
-          <div className="px-5 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
-            <span style={{ fontFamily: 'Oswald, sans-serif', color: '#7eb89a', fontSize: '0.8rem', letterSpacing: '0.1em' }}>
-              PRÓXIMOS PARTIDOS — FASE DE GRUPOS
-            </span>
-          </div>
-          <div>
-            {UPCOMING_MATCHES.map((match, i) => {
-              const home = getTeam(match.homeTeamId);
-              const away = getTeam(match.awayTeamId);
-              return (
-                <div
-                  key={match.id}
-                  className="px-5 py-4 flex items-center gap-4"
-                  style={{ borderBottom: i < UPCOMING_MATCHES.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none' }}
-                >
-                  {/* Date/time */}
-                  <div className="flex-shrink-0 text-center" style={{ minWidth: '70px' }}>
-                    <div style={{ fontFamily: 'DM Mono, monospace', color: '#7eb89a', fontSize: '0.68rem' }}>{match.date}</div>
-                    <div style={{ fontFamily: 'Oswald, sans-serif', color: '#f5a623', fontSize: '0.9rem', fontWeight: 600 }}>{match.time}</div>
-                    <div style={{ color: '#4a7d65', fontSize: '0.62rem', fontFamily: 'DM Mono' }}>Gr. {match.group}</div>
-                  </div>
+        <div className="flex flex-col gap-5">
+          {byPhase.map(({ phase, matches }) => (
+            <div key={phase} className="rounded-xl overflow-hidden" style={{ background: '#0d5035', border: '1px solid rgba(255,255,255,0.07)' }}>
+              <div className="px-5 py-3 flex items-center justify-between" style={{ background: 'rgba(245,166,35,0.06)', borderBottom: '1px solid rgba(245,166,35,0.12)' }}>
+                <span style={{ fontFamily: 'Oswald, sans-serif', color: '#f5a623', fontSize: '0.85rem', letterSpacing: '0.1em' }}>
+                  {phase.toUpperCase()}
+                </span>
+                <span style={{ color: '#4a7d65', fontSize: '0.66rem', fontFamily: 'DM Mono' }}>{matches.length} partidos</span>
+              </div>
+              <div>
+                {matches.map((match: Match, i: number) => (
+                  <div
+                    key={match.id}
+                    className="px-5 py-4 flex items-center gap-4"
+                    style={{ borderBottom: i < matches.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none' }}
+                  >
+                    {/* Date/time/match number */}
+                    <div className="flex-shrink-0 text-center" style={{ minWidth: '70px' }}>
+                      <div style={{ fontFamily: 'DM Mono, monospace', color: '#7eb89a', fontSize: '0.68rem' }}>{match.date}</div>
+                      <div style={{ fontFamily: 'Oswald, sans-serif', color: '#f5a623', fontSize: '0.9rem', fontWeight: 600 }}>{match.time}</div>
+                      <div style={{ color: '#4a7d65', fontSize: '0.62rem', fontFamily: 'DM Mono' }}>
+                        {match.group ? `Gr. ${match.group}` : `P${match.matchNum}`}
+                      </div>
+                    </div>
 
-                  {/* Match */}
-                  <div className="flex-1 flex items-center gap-3">
-                    <div className="flex items-center gap-2 flex-1 justify-end">
-                      <span style={{ color: '#e0f0e8', fontSize: '0.88rem', fontFamily: 'Nunito Sans, sans-serif', fontWeight: 600 }}>{home.name}</span>
-                      <span className="text-xl">{home.flag}</span>
+                    {/* Match */}
+                    <div className="flex-1 flex items-center gap-3">
+                      <MatchSide teamId={match.homeTeamId} label={match.homeLabel} align="right" />
+                      <div className="flex-shrink-0 px-3 py-1 rounded-lg" style={{ background: 'rgba(255,255,255,0.07)', minWidth: '64px', textAlign: 'center' }}>
+                        <span style={{ fontFamily: 'DM Mono, monospace', color: '#9cc4b2', fontSize: '0.85rem' }}>VS</span>
+                      </div>
+                      <MatchSide teamId={match.awayTeamId} label={match.awayLabel} align="left" />
                     </div>
-                    <div className="flex-shrink-0 px-3 py-1 rounded-lg" style={{ background: 'rgba(255,255,255,0.07)', minWidth: '64px', textAlign: 'center' }}>
-                      <span style={{ fontFamily: 'DM Mono, monospace', color: '#9cc4b2', fontSize: '0.85rem' }}>NC</span>
-                    </div>
-                    <div className="flex items-center gap-2 flex-1">
-                      <span className="text-xl">{away.flag}</span>
-                      <span style={{ color: '#e0f0e8', fontSize: '0.88rem', fontFamily: 'Nunito Sans, sans-serif', fontWeight: 600 }}>{away.name}</span>
-                    </div>
-                  </div>
 
-                  {/* City */}
-                  <div className="hidden sm:block flex-shrink-0 text-right" style={{ minWidth: '100px' }}>
-                    <div style={{ color: '#4a7d65', fontSize: '0.68rem', fontFamily: 'DM Mono, monospace' }}>{match.city}</div>
-                    <div className="mt-1 px-2 py-0.5 rounded-full inline-block" style={{ background: 'rgba(212,242,38,0.08)', color: '#d4f226', fontSize: '0.6rem', fontFamily: 'DM Mono' }}>
-                      PRÓXIMO
+                    {/* City */}
+                    <div className="hidden sm:block flex-shrink-0 text-right" style={{ minWidth: '100px' }}>
+                      <div style={{ color: '#4a7d65', fontSize: '0.68rem', fontFamily: 'DM Mono, monospace' }}>{match.city}</div>
+                      <div className="mt-1 px-2 py-0.5 rounded-full inline-block" style={{ background: 'rgba(212,242,38,0.08)', color: '#d4f226', fontSize: '0.6rem', fontFamily: 'DM Mono' }}>
+                        PRÓXIMO
+                      </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
       )}
 

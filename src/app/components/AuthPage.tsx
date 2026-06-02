@@ -92,7 +92,7 @@ export function AuthPage() {
           <div className="inline-flex items-center justify-center w-20 h-20 rounded-full mb-4 shadow-xl" style={{ background: 'linear-gradient(135deg, #f5a623, #e8890f)' }}>
             <Trophy size={36} style={{ color: '#062b1a' }} />
           </div>
-          <h1 style={{ fontFamily: 'Oswald, sans-serif', color: '#f5a623', fontSize: '2.4rem', fontWeight: 700, letterSpacing: '0.05em', lineHeight: 1 }}>QUINELA</h1>
+          <h1 style={{ fontFamily: 'Oswald, sans-serif', color: '#f5a623', fontSize: '2.4rem', fontWeight: 700, letterSpacing: '0.05em', lineHeight: 1 }}>PRONOSTICA PANTERA</h1>
           <p style={{ fontFamily: 'Oswald, sans-serif', color: '#7eb89a', fontSize: '1rem', letterSpacing: '0.2em' }}>MUNDIAL FIFA 2026</p>
           <p style={{ color: '#9cc4b2', fontSize: '0.85rem', marginTop: '8px' }}>Estados Unidos · Canadá · México</p>
         </div>

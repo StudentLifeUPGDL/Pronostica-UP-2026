@@ -212,7 +212,7 @@ export function ExplanationsPage({ config }: { config: AppConfig }) {
           <div className="flex-1 h-px" style={{ background: 'rgba(245,166,35,0.15)' }} />
         </div>
         <p style={{ color: '#3a6b55', fontSize: '0.72rem', fontFamily: 'DM Mono' }}>
-          QUINELA MUNDIAL 2026 · ESTADOSU UNIDOS · CANADÁ · MÉXICO
+          PRONOSTICA PANTERA · MUNDIAL 2026 · ESTADOS UNIDOS · CANADÁ · MÉXICO
         </p>
       </div>
     </div>
