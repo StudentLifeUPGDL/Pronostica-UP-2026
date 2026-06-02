@@ -94,6 +94,7 @@ export function AuthPage() {
           </div>
           <h1 style={{ fontFamily: 'Oswald, sans-serif', color: '#f5a623', fontSize: '2.4rem', fontWeight: 700, letterSpacing: '0.05em', lineHeight: 1 }}>PRONOSTICA PANTERA</h1>
           <p style={{ fontFamily: 'Oswald, sans-serif', color: '#7eb89a', fontSize: '1rem', letterSpacing: '0.2em' }}>MUNDIAL FIFA 2026</p>
+          <p style={{ fontFamily: 'Oswald, sans-serif', color: '#d4f226', fontSize: '0.8rem', letterSpacing: '0.18em', marginTop: '6px' }}>UNIVERSIDAD PANAMERICANA</p>
           <p style={{ color: '#9cc4b2', fontSize: '0.85rem', marginTop: '8px' }}>Estados Unidos · Canadá · México</p>
         </div>
 

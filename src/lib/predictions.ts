@@ -88,7 +88,7 @@ export async function saveMainPrediction(pred: Prediction, isNew: boolean): Prom
     const pending = mine.filter(p => p.league === 'main' && p.paymentStatus === 'pending').length;
     if (pending >= cfg.maxPendingPerUser) {
       throw new Error(
-        `Tienes ${pending} quinela(s) con pago pendiente (máximo ${cfg.maxPendingPerUser}). ` +
+        `Tienes ${pending} quiniela(s) con pago pendiente (máximo ${cfg.maxPendingPerUser}). ` +
         `Espera a que se confirme un pago antes de crear otra.`,
       );
     }

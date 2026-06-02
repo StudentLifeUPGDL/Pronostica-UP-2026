@@ -1,4 +1,4 @@
-# 🚀 Checklist de despliegue — Quinela Mundial 2026
+# 🚀 Checklist de despliegue — Quiniela Mundial 2026
 
 Guía paso a paso para pasar de "el código ya compila" a "la app está en línea y la
 gente puede jugar". El **código ya está listo** (compila sin errores); lo que falta
@@ -6,7 +6,7 @@ es **configuración externa y secretos** que, correctamente, no viven en el repo
 
 > **Orden importa.** Hay 2 pasos que casi siempre se olvidan y dejan la app inservible:
 > el **paso 8** (claim de admin) y el **paso 9** (sembrar `config/app`). Sin el paso 9,
-> *nadie* puede crear quinelas aunque todo lo demás esté bien.
+> *nadie* puede crear quinielas aunque todo lo demás esté bien.
 
 Tiempo estimado: **30–45 min**.
 
@@ -24,7 +24,7 @@ Tiempo estimado: **30–45 min**.
 | 6 | Proyecto en Vercel + variables `VITE_*` | Sitio público |
 | 7 | Dominio de Vercel en "Authorized domains" | Login en producción |
 | 8 | Claim `admin` (`setAdmin.mjs`) | Escrituras de admin |
-| 9 | **Sembrar `config/app`** (Admin → Guardar config) | **Crear quinelas** |
+| 9 | **Sembrar `config/app`** (Admin → Guardar config) | **Crear quinielas** |
 | 10 | Prueba de humo end-to-end | — (verificación) |
 
 ---
@@ -174,8 +174,8 @@ El allowlist de correos solo muestra la *interfaz* de admin; el permiso real par
 ## Paso 9 — ⭐ Sembrar `config/app` (¡el paso que todos olvidan!)
 
 Las reglas de seguridad llaman `get(config/app)` cada vez que alguien crea/edita una
-quinela. Si ese documento **no existe**, esas llamadas fallan y **nadie puede crear
-quinelas** (error de permisos), aunque todo lo demás esté perfecto.
+quiniela. Si ese documento **no existe**, esas llamadas fallan y **nadie puede crear
+quinielas** (error de permisos), aunque todo lo demás esté perfecto.
 
 1. [ ] Entra como admin → pestaña **Admin → Resultados / Config**.
 2. [ ] Revisa fechas, cuotas y % de premio.
@@ -183,7 +183,7 @@ quinelas** (error de permisos), aunque todo lo demás esté perfecto.
 
 Valores por defecto (editables en esa pantalla):
 
-- Cierre quinela principal: **11 jun 2026, 16:00 (CDMX)**
+- Cierre quiniela principal: **11 jun 2026, 16:00 (CDMX)**
 - Límite de pago: **14 jun 2026, 23:59**
 - Inicio R32 / R16: **28 jun** / **4 jul 2026**
 - Cuotas: principal **$100**, arreglos **$50** · Moneda **MXN** · Premio **90%**, redondeo a **100**
@@ -195,9 +195,9 @@ Valores por defecto (editables en esa pantalla):
 Con una cuenta de prueba (un segundo correo, no el de admin):
 
 - [ ] Registro → llega correo de verificación → verificar.
-- [ ] Crear una quinela principal → guardar (debe aparecer en **Mis Quinelas** como *pendiente*).
+- [ ] Crear una quiniela principal → guardar (debe aparecer en **Mis Quinielas** como *pendiente*).
 - [ ] Botón de pago abre el Google Form **pre-rellenado** con ID, correo y competencia.
-- [ ] Como **admin**: en **Reporte general**, confirmar el pago de esa quinela → pasa a *pagada*.
+- [ ] Como **admin**: en **Reporte general**, confirmar el pago de esa quiniela → pasa a *pagada*.
 - [ ] Como **admin**: en **Resultados / Config**, capturar algún resultado → el puntaje se
   recalcula en el reporte.
 - [ ] (Opcional) Exportar **CSV** del reporte.
@@ -212,7 +212,7 @@ Si todos los pasos pasan, **estás en vivo**. 🎉
 |---|---|---|
 | Pantalla "FALTA CONFIGURAR FIREBASE" | Faltan `VITE_FIREBASE_*` o no se reinició Vite | Revisa `.env.local`, reinicia `pnpm dev` / Redeploy en Vercel |
 | Login falla con `auth/unauthorized-domain` | Dominio no autorizado | Paso 7 |
-| "Missing or insufficient permissions" al **crear quinela** | `config/app` no sembrado | Paso 9 |
+| "Missing or insufficient permissions" al **crear quiniela** | `config/app` no sembrado | Paso 9 |
 | "Missing or insufficient permissions" al **guardar config/resultados** | Falta el claim `admin` | Paso 8 (y volver a iniciar sesión) |
 | No aparece la pestaña **Admin** | No re-iniciaste sesión tras el claim, o el correo no está en `adminEmails` | Cierra y abre sesión; verifica el correo |
 | El botón de pago no aparece | Faltan `VITE_PAYMENT_FORM_*` | Paso 4 + Redeploy |

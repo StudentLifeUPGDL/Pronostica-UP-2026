@@ -95,7 +95,7 @@ export function HomePage({ userName, onNavigate, predictions, results, config }:
             <div className="flex flex-wrap gap-3 mt-5">
               <button onClick={() => onNavigate('my-predictions')} className="px-5 py-2.5 rounded-lg cursor-pointer transition-all"
                 style={{ background: '#f5a623', color: '#062b1a', fontFamily: 'Oswald, sans-serif', fontWeight: 700, fontSize: '0.9rem', letterSpacing: '0.05em' }}>
-                {mains.length > 0 ? 'VER MIS QUINELAS' : 'HACER MI QUINELA'}
+                {mains.length > 0 ? 'VER MIS QUINIELAS' : 'HACER MI QUINIELA'}
               </button>
               <button onClick={() => onNavigate('results')} className="px-5 py-2.5 rounded-lg cursor-pointer transition-all"
                 style={{ border: '1px solid rgba(245,166,35,0.4)', color: '#f5a623', fontFamily: 'Oswald, sans-serif', fontSize: '0.9rem', letterSpacing: '0.05em' }}>
@@ -114,7 +114,7 @@ export function HomePage({ userName, onNavigate, predictions, results, config }:
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-        <StatCard icon={<Star size={18} style={{ color: '#d4f226' }} />} value={mains.length} label="TUS QUINELAS" />
+        <StatCard icon={<Star size={18} style={{ color: '#d4f226' }} />} value={mains.length} label="TUS QUINIELAS" />
         <StatCard icon={<Wallet size={18} style={{ color: '#4ade80' }} />} value={paidCount} label="PAGADAS" />
         <StatCard icon={<Wrench size={18} style={{ color: '#c084fc' }} />} value={fixes.length} label="ARREGLOS" />
         <StatCard icon={<Calendar size={18} style={{ color: '#7eb89a' }} />} value={daysLeft} label="DÍAS PARA EL INICIO" />
@@ -163,16 +163,16 @@ export function HomePage({ userName, onNavigate, predictions, results, config }:
           <div className="px-5 py-3 flex items-center justify-between" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
             <div className="flex items-center gap-2">
               <Trophy size={14} style={{ color: '#f5a623' }} />
-              <span style={{ fontFamily: 'Oswald, sans-serif', color: '#f5a623', fontSize: '0.9rem', letterSpacing: '0.08em' }}>MIS QUINELAS Y PUNTOS</span>
+              <span style={{ fontFamily: 'Oswald, sans-serif', color: '#f5a623', fontSize: '0.9rem', letterSpacing: '0.08em' }}>MIS QUINIELAS Y PUNTOS</span>
             </div>
             <button onClick={() => onNavigate('my-predictions')} style={{ color: '#7eb89a', fontSize: '0.72rem', fontFamily: 'DM Mono, monospace' }}>gestionar →</button>
           </div>
           {predictions.length === 0 ? (
             <div className="px-5 py-8 text-center">
               <Users size={36} style={{ color: '#2a5a3a', margin: '0 auto 12px' }} />
-              <p style={{ color: '#7eb89a', fontSize: '0.85rem', marginBottom: '14px' }}>Aún no tienes quinelas. ¡Crea la primera!</p>
+              <p style={{ color: '#7eb89a', fontSize: '0.85rem', marginBottom: '14px' }}>Aún no tienes quinielas. ¡Crea la primera!</p>
               <button onClick={() => onNavigate('my-predictions')} className="px-4 py-2 rounded-lg cursor-pointer" style={{ background: '#f5a623', color: '#062b1a', fontFamily: 'Oswald, sans-serif', fontWeight: 700, fontSize: '0.82rem' }}>
-                CREAR QUINELA
+                CREAR QUINIELA
               </button>
             </div>
           ) : (

@@ -1,4 +1,4 @@
-# Quinela Mundial 2026
+# Quiniela Mundial 2026
 
 App de pronósticos del Mundial FIFA 2026: cuentas con verificación por correo, almacenamiento en
 la nube, puntaje automático, **ligas de "arreglos"** posteriores al inicio (R32 y R16) con premios
@@ -61,7 +61,7 @@ pnpm dlx firebase-tools deploy --only firestore:rules
 3. Cierra sesión y vuelve a entrar. Aparecerá la pestaña **Admin**.
 4. En **Admin → Resultados / Config**, pulsa **Guardar configuración** una vez para inicializar el
    documento `config/app` (fechas de cierre, cuotas, % de premio, etc.). **Esto es necesario** para
-   que los participantes puedan crear quinelas.
+   que los participantes puedan crear quinielas.
 
 ## 6. Formulario de pago (Google Forms)
 
@@ -92,13 +92,13 @@ corepack pnpm build    # genera dist/
 ## Reglas del juego (resumen)
 
 - **Cuentas:** correo + contraseña, con verificación por email (y recuperación de contraseña).
-- **Quinelas:** ilimitadas por persona, máx. 5 con pago pendiente a la vez. Cada una se paga por
+- **Quinielas:** ilimitadas por persona, máx. 5 con pago pendiente a la vez. Cada una se paga por
   separado vía el Google Form; el admin confirma el pago manualmente. Las pendientes vencidas se
   pueden anular tras la fecha límite.
 - **Puntaje:** grupos por **posición exacta** (2 pts c/u por 1°, 2°, 3°); eliminatorias por **equipo
   que avanza** (R32=3, R16=5, Cuartos=8, Semis=13); Campeón=25, Subcampeón=10, 3°=7.
 - **Ganador único:** se ordena por puntos; los empates se rompen por hora de registro (el primero gana).
-- **Arreglos (ligas aparte):** tras el inicio, con la quinela principal pagada, se puede comprar un
+- **Arreglos (ligas aparte):** tras el inicio, con la quiniela principal pagada, se puede comprar un
   arreglo de **R32** (al conocerse los grupos) y otro de **R16** (al conocerse R32). Cada arreglo es
   una liga independiente con su propio bote; reparte el 90% del bote (configurable), redondeado hacia
   abajo a 100.

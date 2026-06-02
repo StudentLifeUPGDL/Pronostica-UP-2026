@@ -11,7 +11,7 @@ const ENTRY_LEAGUE = import.meta.env.VITE_PAYMENT_FORM_ENTRY_LEAGUE;
 export const paymentFormConfigured = Boolean(BASE);
 
 const LEAGUE_LABEL: Record<League, string> = {
-  main: 'Quinela principal',
+  main: 'Quiniela principal',
   r32: 'Arreglo Dieciseisavos (R32)',
   r16: 'Arreglo Octavos (R16)',
 };

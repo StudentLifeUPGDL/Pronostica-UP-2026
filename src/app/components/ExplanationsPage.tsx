@@ -72,10 +72,10 @@ export function ExplanationsPage({ config }: { config: AppConfig }) {
           </div>
           <div>
             <h1 style={{ fontFamily: 'Oswald, sans-serif', color: '#f5a623', fontSize: '1.8rem', fontWeight: 700, letterSpacing: '0.04em' }}>
-              CÓMO FUNCIONA LA QUINELA
+              CÓMO FUNCIONA PRONOSTICA PANTERA
             </h1>
             <p style={{ color: '#7eb89a', fontSize: '0.85rem' }}>
-              Guía completa para participar en la Quinela del Mundial FIFA 2026
+              Guía completa para participar en Pronostica Pantera, la quiniela del Mundial FIFA 2026 de la Universidad Panamericana
             </p>
           </div>
         </div>
@@ -83,11 +83,11 @@ export function ExplanationsPage({ config }: { config: AppConfig }) {
 
       <div className="grid gap-5">
         {/* Qué es */}
-        <Card icon={<Star size={16} style={{ color: '#f5a623' }} />} title="¿QUÉ ES LA QUINELA?">
+        <Card icon={<Star size={16} style={{ color: '#f5a623' }} />} title="¿QUÉ ES PRONOSTICA PANTERA?">
           <p style={{ color: '#c0d8cc', fontSize: '0.88rem', fontFamily: 'Nunito Sans, sans-serif', lineHeight: 1.6, marginBottom: '12px' }}>
-            La quinela es un torneo de pronósticos deportivos donde cada participante predice los resultados del Mundial FIFA 2026. Ganas puntos cuando tus pronósticos coinciden con los resultados reales.
+            Pronostica Pantera es una quiniela del Mundial FIFA 2026, una actividad de la Universidad Panamericana: un torneo de pronósticos deportivos donde cada participante predice los resultados. Ganas puntos cuando tus pronósticos coinciden con los resultados reales.
           </p>
-          <BulletItem>Crea <strong>múltiples quinelas</strong> (máx. {config.maxPendingPerUser} con pago pendiente a la vez).</BulletItem>
+          <BulletItem>Crea <strong>múltiples quinielas</strong> (máx. {config.maxPendingPerUser} con pago pendiente a la vez).</BulletItem>
           <BulletItem>Accede con tu <strong>correo y contraseña</strong>, con verificación por email.</BulletItem>
           <BulletItem>Los picks deben hacerse <strong>antes del inicio del torneo</strong> (11 junio 2026).</BulletItem>
           <BulletItem>Tras el inicio puedes comprar <strong>arreglos</strong> de R32 y R16 que compiten en ligas aparte.</BulletItem>
@@ -98,10 +98,10 @@ export function ExplanationsPage({ config }: { config: AppConfig }) {
           <div className="flex flex-col gap-3">
             {[
               { step: '1', title: 'Crea tu cuenta', desc: 'Regístrate con tu correo y contraseña, y confirma el correo de verificación que te enviamos.' },
-              { step: '2', title: 'Crea tus quinelas', desc: `En "Mis Pronósticos" crea las quinelas que quieras (máx. ${config.maxPendingPerUser} con pago pendiente a la vez).` },
+              { step: '2', title: 'Crea tus quinielas', desc: `En "Mis Pronósticos" crea las quinielas que quieras (máx. ${config.maxPendingPerUser} con pago pendiente a la vez).` },
               { step: '3', title: 'Llena los grupos', desc: 'Para cada grupo A–L, elige qué equipos terminan en 1°, 2° y 3° lugar.' },
               { step: '4', title: 'Pronostica los cruces', desc: 'Avanza por las rondas: dieciséisavos, octavos, cuartos, semis y gran final.' },
-              { step: '5', title: 'Paga y confirma', desc: 'Guarda tu quinela y confirma tu transferencia en el formulario. Editable hasta el inicio del torneo.' },
+              { step: '5', title: 'Paga y confirma', desc: 'Guarda tu quiniela y confirma tu transferencia en el formulario. Editable hasta el inicio del torneo.' },
             ].map(item => (
               <div key={item.step} className="flex items-start gap-3">
                 <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5" style={{ background: 'rgba(212,242,38,0.15)', border: '1px solid rgba(212,242,38,0.2)' }}>
@@ -133,7 +133,7 @@ export function ExplanationsPage({ config }: { config: AppConfig }) {
             <span style={{ color: '#f5a623', fontSize: '0.78rem', fontFamily: 'Nunito Sans' }}>
               En grupos cuenta la <strong>posición exacta</strong> (1°, 2° y 3°). En eliminatorias ganas los
               puntos por cada equipo que pusiste como ganador y que realmente avanzó en esa ronda. Si hay
-              empate en puntos, gana quien registró su quinela primero — así siempre hay un único ganador.
+              empate en puntos, gana quien registró su quiniela primero — así siempre hay un único ganador.
             </span>
           </div>
         </Card>
@@ -187,10 +187,10 @@ export function ExplanationsPage({ config }: { config: AppConfig }) {
         <Card icon={<HelpCircle size={16} style={{ color: '#7eb89a' }} />} title="PREGUNTAS FRECUENTES">
           {[
             { q: '¿Cuándo cierran los pronósticos?', a: 'Los picks se bloquean al inicio del primer partido: jueves 11 de junio de 2026.' },
-            { q: '¿Puedo cambiar mi quinela antes del cierre?', a: 'Sí, puedes editarla cuantas veces quieras hasta el cierre.' },
-            { q: '¿Qué son los "arreglos" de R32 y R16?', a: 'Tras el inicio del torneo puedes pagar para volver a pronosticar desde dieciseisavos (R32) u octavos (R16). Cada arreglo compite en su propia liga con premio aparte; no afecta tu quinela principal.' },
-            { q: '¿Cómo veo quién va ganando?', a: 'La clasificación general es privada del organizador. Tú ves los puntos de tus propias quinelas en el inicio.' },
-            { q: '¿Cómo confirmo mi pago?', a: 'Al guardar una quinela, usa el botón "Confirmar transferencia" para enviar tu comprobante en el formulario. El organizador marca tu pago como confirmado.' },
+            { q: '¿Puedo cambiar mi quiniela antes del cierre?', a: 'Sí, puedes editarla cuantas veces quieras hasta el cierre.' },
+            { q: '¿Qué son los "arreglos" de R32 y R16?', a: 'Tras el inicio del torneo puedes pagar para volver a pronosticar desde dieciseisavos (R32) u octavos (R16). Cada arreglo compite en su propia liga con premio aparte; no afecta tu quiniela principal.' },
+            { q: '¿Cómo veo quién va ganando?', a: 'La clasificación general es privada del organizador. Tú ves los puntos de tus propias quinielas en el inicio.' },
+            { q: '¿Cómo confirmo mi pago?', a: 'Al guardar una quiniela, usa el botón "Confirmar transferencia" para enviar tu comprobante en el formulario. El organizador marca tu pago como confirmado.' },
           ].map((faq, i) => (
             <div key={i} className="py-3" style={{ borderBottom: i < 4 ? '1px solid rgba(255,255,255,0.05)' : 'none' }}>
               <div style={{ fontFamily: 'Oswald, sans-serif', color: '#d4f226', fontSize: '0.85rem', letterSpacing: '0.03em', marginBottom: '4px' }}>
@@ -212,7 +212,7 @@ export function ExplanationsPage({ config }: { config: AppConfig }) {
           <div className="flex-1 h-px" style={{ background: 'rgba(245,166,35,0.15)' }} />
         </div>
         <p style={{ color: '#3a6b55', fontSize: '0.72rem', fontFamily: 'DM Mono' }}>
-          PRONOSTICA PANTERA · MUNDIAL 2026 · ESTADOS UNIDOS · CANADÁ · MÉXICO
+          PRONOSTICA PANTERA · UNIVERSIDAD PANAMERICANA · MUNDIAL 2026 · ESTADOS UNIDOS · CANADÁ · MÉXICO
         </p>
       </div>
     </div>

@@ -42,7 +42,7 @@ export function VerifyEmailNotice() {
             </div>
             <p style={{ color: '#c0d8cc', fontSize: '0.82rem', marginTop: '4px', fontFamily: 'Nunito Sans' }}>
               Enviamos un enlace de verificación a <strong style={{ color: '#e0f0e8' }}>{user?.email}</strong>.
-              Confírmalo para poder crear y guardar tus quinelas.
+              Confírmalo para poder crear y guardar tus quinielas.
             </p>
             <div className="flex flex-wrap gap-2 mt-3">
               <button onClick={recheck} disabled={busy}
