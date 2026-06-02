@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { Users, Trophy, Star, Calendar, Wallet, Wrench } from 'lucide-react';
 import { UPCOMING_MATCHES, GROUPS, getTeam, type Prediction, type Results, type AppConfig } from '../data/worldcup';
 import { computeScore } from '../../lib/scoring';
@@ -12,12 +13,30 @@ interface HomePageProps {
   config: AppConfig;
 }
 
-function CountdownTimer({ days }: { days: number }) {
+function CountdownTimer({ target }: { target: string }) {
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    const targetMs = new Date(target).getTime();
+    const id = setInterval(() => {
+      setNow(Date.now());
+      // Stop ticking once we've reached the target.
+      if (Date.now() >= targetMs) clearInterval(id);
+    }, 1000);
+    return () => clearInterval(id);
+  }, [target]);
+
+  const totalSec = Math.max(0, Math.floor((new Date(target).getTime() - now) / 1000));
+  const days = Math.floor(totalSec / 86400);
+  const hrs = Math.floor((totalSec % 86400) / 3600);
+  const min = Math.floor((totalSec % 3600) / 60);
+  const sec = totalSec % 60;
+
   return (
     <div className="flex items-center gap-4">
-      {[{ val: days, label: 'DÍAS' }, { val: 0, label: 'HRS' }, { val: 0, label: 'MIN' }].map(t => (
-        <div key={t.label} className="text-center">
-          <div style={{ fontFamily: 'Oswald, sans-serif', fontSize: '2.2rem', fontWeight: 700, color: '#f5a623', lineHeight: 1 }}>
+      {[{ val: days, label: 'DÍAS' }, { val: hrs, label: 'HRS' }, { val: min, label: 'MIN' }, { val: sec, label: 'SEG' }].map(t => (
+        <div key={t.label} className="text-center" style={{ minWidth: '2.6rem' }}>
+          <div style={{ fontFamily: 'Oswald, sans-serif', fontSize: '2.2rem', fontWeight: 700, color: '#f5a623', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
             {String(t.val).padStart(2, '0')}
           </div>
           <div style={{ fontSize: '0.6rem', color: '#7eb89a', letterSpacing: '0.15em', fontFamily: 'DM Mono, monospace' }}>{t.label}</div>
@@ -86,7 +105,7 @@ export function HomePage({ userName, onNavigate, predictions, results, config }:
           </div>
           <div className="flex flex-col items-center gap-2">
             <div style={{ color: '#7eb89a', fontSize: '0.7rem', letterSpacing: '0.15em', fontFamily: 'DM Mono, monospace' }}>INICIA EN</div>
-            <CountdownTimer days={daysLeft} />
+            <CountdownTimer target={config.lockDate} />
             <div className="w-full h-px mt-2" style={{ background: 'rgba(245,166,35,0.2)' }} />
             <div style={{ color: '#7eb89a', fontSize: '0.7rem', letterSpacing: '0.1em', fontFamily: 'DM Mono, monospace' }}>JUEVES 11 JUN 2026</div>
           </div>
