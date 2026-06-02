@@ -187,22 +187,47 @@ function loserOf(match) {
 function buildResults(standings, matches) {
   const out = {};
 
-  // Group placements (exact 1/2/3) from the standings tables.
+  // Two separate things come out of the standings tables:
+  //   • groupTables[X] — the full standings rows (PJ/G/E/P/PTS), published LIVE every
+  //     run so the standings DISPLAY updates after each match (provisional).
+  //   • groups[X]      — the exact 1/2/3 that SCORING and the bracket read. Written
+  //     only once the group is DEFINITIVE (every team has played all 3 matches), so
+  //     points are awarded only on final group results, never on provisional order.
   const groups = {};
+  const groupTables = {};
   for (const s of standings.standings ?? []) {
     if (s.type && s.type !== 'TOTAL') continue;
     const letter = groupLetterFromStandings(s);
     if (!letter) continue;
     const rows = [...(s.table ?? [])].sort((a, b) => a.position - b.position);
+
+    // Full live table (display). Built every run, in current API position order.
+    const table = [];
+    for (const r of rows) {
+      const teamId = resolveTeam(r.team);
+      if (!teamId) continue;
+      table.push({
+        teamId,
+        played: r.playedGames ?? 0,
+        won: r.won ?? 0,
+        drawn: r.draw ?? 0,
+        lost: r.lost ?? 0,
+        points: r.points ?? 0,
+      });
+    }
+    if (table.length) groupTables[letter] = table;
+
+    // Exact 1/2/3 for scoring + bracket — only once the group is COMPLETE (all teams
+    // played their 3 matches). Until then the order is provisional and unscored.
+    const complete = rows.length >= 4 && rows.every((r) => (r.playedGames ?? 0) >= 3);
     const [a, b, c] = rows;
     const first = a && resolveTeam(a.team);
     const second = b && resolveTeam(b.team);
     const third = c && resolveTeam(c.team);
-    // Only record a group once all three places resolve (avoids half-written groups
-    // mid-stage; scoring needs exact positions anyway).
-    if (first && second && third) groups[letter] = { first, second, third };
+    if (complete && first && second && third) groups[letter] = { first, second, third };
   }
   if (Object.keys(groups).length) out.groups = groups;
+  if (Object.keys(groupTables).length) out.groupTables = groupTables;
 
   // Knockout winners per round, from FINISHED matches only.
   const finished = (matches.matches ?? []).filter((m) => m.status === 'FINISHED');
@@ -245,12 +270,21 @@ function buildResults(standings, matches) {
 function summarize(r) {
   const names = (ids) => (ids ?? []).map((id) => DISPLAY[id] ?? id).join(', ') || '—';
   const lines = ['', '── Derived results ──────────────────────────────'];
-  if (r.groups) {
-    for (const g of Object.keys(r.groups).sort()) {
+  const scoredGroups = Object.keys(r.groups ?? {}).sort();
+  if (scoredGroups.length) {
+    for (const g of scoredGroups) {
       const { first, second, third } = r.groups[g];
-      lines.push(`  Group ${g}: 1° ${DISPLAY[first] ?? first}  ·  2° ${DISPLAY[second] ?? second}  ·  3° ${DISPLAY[third] ?? third}`);
+      lines.push(`  Group ${g} (FINAL · scored): 1° ${DISPLAY[first] ?? first}  ·  2° ${DISPLAY[second] ?? second}  ·  3° ${DISPLAY[third] ?? third}`);
     }
-  } else lines.push('  (no completed groups yet)');
+  } else lines.push('  (no groups finished yet — none scored)');
+  // Groups that have started but aren't complete: shown live, but NOT yet scored.
+  const inProgress = Object.entries(r.groupTables ?? {})
+    .map(([g, t]) => [g, t.reduce((n, row) => Math.max(n, row.played ?? 0), 0)])
+    .filter(([g, p]) => p > 0 && p < 3 && !r.groups?.[g])
+    .sort(([a], [b]) => a.localeCompare(b));
+  if (inProgress.length) {
+    lines.push(`  In progress (live display, unscored): ${inProgress.map(([g, p]) => `${g} ${p}/3`).join(', ')}`);
+  }
   lines.push(`  R32 advanced (${r.r32Winners?.length ?? 0}/16): ${names(r.r32Winners)}`);
   lines.push(`  R16 advanced (${r.r16Winners?.length ?? 0}/8):  ${names(r.r16Winners)}`);
   lines.push(`  QF  advanced (${r.qfWinners?.length ?? 0}/4):  ${names(r.qfWinners)}`);

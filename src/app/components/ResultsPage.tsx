@@ -166,48 +166,70 @@ export function ResultsPage({ results = EMPTY_RESULTS }: { results?: Results }) 
             ))}
           </div>
 
-          {/* Group table */}
-          {GROUPS.filter(g => g.id === activeGroup).map(group => (
-            <div key={group.id} className="rounded-xl overflow-hidden" style={{ background: '#0d5035', border: '1px solid rgba(255,255,255,0.07)' }}>
-              <div className="px-5 py-3 flex items-center gap-2" style={{ background: 'rgba(245,166,35,0.08)', borderBottom: '1px solid rgba(245,166,35,0.15)' }}>
-                <Trophy size={14} style={{ color: '#f5a623' }} />
-                <span style={{ fontFamily: 'Oswald, sans-serif', color: '#f5a623', fontSize: '1rem', letterSpacing: '0.06em' }}>
-                  GRUPO {group.id}
-                </span>
-              </div>
-              <div>
-                {/* Table header */}
-                <div className="px-5 py-2 grid gap-2" style={{ gridTemplateColumns: '1fr 60px 60px 60px 60px 60px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                  {['EQUIPO', 'PJ', 'G', 'E', 'P', 'PTS'].map(h => (
-                    <div key={h} className="text-right first:text-left" style={{ color: '#4a7d65', fontSize: '0.68rem', fontFamily: 'DM Mono, monospace', letterSpacing: '0.08em' }}>
-                      {h}
+          {/* Group table — live standings from results.groupTables when available,
+              otherwise the static draw order with zeros (pre-kickoff). */}
+          {GROUPS.filter(g => g.id === activeGroup).map(group => {
+            const liveRows = results.groupTables?.[group.id];
+            const rows = (liveRows && liveRows.length)
+              ? liveRows.map(r => ({ team: getTeam(r.teamId), played: r.played, won: r.won, drawn: r.drawn, lost: r.lost, points: r.points }))
+              : group.teams.map(t => ({ team: t, played: 0, won: 0, drawn: 0, lost: 0, points: 0 }));
+            const maxPlayed = rows.reduce((n, r) => Math.max(n, r.played), 0);
+            const complete = maxPlayed >= 3;
+            const inProgress = maxPlayed > 0 && !complete;
+            return (
+              <div key={group.id} className="rounded-xl overflow-hidden" style={{ background: '#0d5035', border: '1px solid rgba(255,255,255,0.07)' }}>
+                <div className="px-5 py-3 flex items-center justify-between" style={{ background: 'rgba(245,166,35,0.08)', borderBottom: '1px solid rgba(245,166,35,0.15)' }}>
+                  <div className="flex items-center gap-2">
+                    <Trophy size={14} style={{ color: '#f5a623' }} />
+                    <span style={{ fontFamily: 'Oswald, sans-serif', color: '#f5a623', fontSize: '1rem', letterSpacing: '0.06em' }}>
+                      GRUPO {group.id}
+                    </span>
+                  </div>
+                  {inProgress && (
+                    <span className="px-2 py-0.5 rounded-full" style={{ background: 'rgba(212,242,38,0.1)', color: '#d4f226', fontSize: '0.6rem', fontFamily: 'DM Mono', letterSpacing: '0.08em' }}>
+                      EN VIVO · PROVISIONAL
+                    </span>
+                  )}
+                  {complete && (
+                    <span className="px-2 py-0.5 rounded-full" style={{ background: 'rgba(74,222,128,0.1)', color: '#4ade80', fontSize: '0.6rem', fontFamily: 'DM Mono', letterSpacing: '0.08em' }}>
+                      FINAL
+                    </span>
+                  )}
+                </div>
+                <div>
+                  {/* Table header */}
+                  <div className="px-5 py-2 grid gap-2" style={{ gridTemplateColumns: '1fr 60px 60px 60px 60px 60px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                    {['EQUIPO', 'PJ', 'G', 'E', 'P', 'PTS'].map(h => (
+                      <div key={h} className="text-right first:text-left" style={{ color: '#4a7d65', fontSize: '0.68rem', fontFamily: 'DM Mono, monospace', letterSpacing: '0.08em' }}>
+                        {h}
+                      </div>
+                    ))}
+                  </div>
+                  {rows.map((row, i) => (
+                    <div
+                      key={row.team.id}
+                      className="px-5 py-3 grid gap-2 items-center"
+                      style={{ gridTemplateColumns: '1fr 60px 60px 60px 60px 60px', borderBottom: i < rows.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span style={{ color: i < 2 ? '#4ade80' : i === 2 ? '#d4f226' : '#4a7d65', fontSize: '0.75rem', fontFamily: 'DM Mono', minWidth: '16px' }}>{i + 1}</span>
+                        <span className="text-lg">{row.team.flag}</span>
+                        <span style={{ fontSize: '0.85rem', color: '#e0f0e8', fontFamily: 'Nunito Sans, sans-serif' }}>{row.team.name}</span>
+                      </div>
+                      {[row.played, row.won, row.drawn, row.lost, row.points].map((v, j) => (
+                        <div key={j} className="text-right" style={{ fontFamily: 'DM Mono, monospace', color: j === 4 ? '#f5a623' : '#9cc4b2', fontSize: '0.85rem', fontWeight: j === 4 ? 700 : 400 }}>{v}</div>
+                      ))}
                     </div>
                   ))}
                 </div>
-                {group.teams.map((team, i) => (
-                  <div
-                    key={team.id}
-                    className="px-5 py-3 grid gap-2 items-center"
-                    style={{ gridTemplateColumns: '1fr 60px 60px 60px 60px 60px', borderBottom: i < 3 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}
-                  >
-                    <div className="flex items-center gap-2">
-                      <span style={{ color: '#4a7d65', fontSize: '0.75rem', fontFamily: 'DM Mono', minWidth: '16px' }}>{i + 1}</span>
-                      <span className="text-lg">{team.flag}</span>
-                      <span style={{ fontSize: '0.85rem', color: '#e0f0e8', fontFamily: 'Nunito Sans, sans-serif' }}>{team.name}</span>
-                    </div>
-                    {[0, 0, 0, 0, 0].map((_, j) => (
-                      <div key={j} className="text-right" style={{ fontFamily: 'DM Mono, monospace', color: '#9cc4b2', fontSize: '0.85rem' }}>0</div>
-                    ))}
-                  </div>
-                ))}
+                <div className="px-5 py-2" style={{ background: 'rgba(0,0,0,0.1)' }}>
+                  <span style={{ color: '#4a7d65', fontSize: '0.68rem', fontFamily: 'DM Mono' }}>
+                    ✦ Top 2 avanzan a Dieciséisavos · Mejor 3ro también puede avanzar
+                  </span>
+                </div>
               </div>
-              <div className="px-5 py-2" style={{ background: 'rgba(0,0,0,0.1)' }}>
-                <span style={{ color: '#4a7d65', fontSize: '0.68rem', fontFamily: 'DM Mono' }}>
-                  ✦ Top 2 avanzan a Dieciséisavos · Mejor 3ro también puede avanzar
-                </span>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 

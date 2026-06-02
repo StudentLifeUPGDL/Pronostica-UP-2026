@@ -82,8 +82,19 @@ export interface GroupResult {
   third: string;   // 3rd
 }
 
+// One row of a live group standings table (provisional — updated after each match).
+export interface GroupStandingRow {
+  teamId: string;
+  played: number;
+  won: number;
+  drawn: number;
+  lost: number;
+  points: number;
+}
+
 export interface Results {
-  groups: Record<string, GroupResult>; // actual exact placements per group A–L
+  groups: Record<string, GroupResult>; // exact placements per group A–L (scored — written only once the group has played all its matches)
+  groupTables?: Record<string, GroupStandingRow[]>; // live standings rows per group, in position order (display only, updates each match)
   r32Winners: string[];                 // 16 teams that won R32 (advanced to R16)
   r16Winners: string[];                 // 8 teams advancing to QF
   qfWinners: string[];                  // 4 teams advancing to SF
@@ -95,7 +106,7 @@ export interface Results {
 }
 
 export const EMPTY_RESULTS: Results = {
-  groups: {}, r32Winners: [], r16Winners: [], qfWinners: [], sfWinners: [],
+  groups: {}, groupTables: {}, r32Winners: [], r16Winners: [], qfWinners: [], sfWinners: [],
   champion: '', runnerUp: '', thirdPlace: '',
 };
 
