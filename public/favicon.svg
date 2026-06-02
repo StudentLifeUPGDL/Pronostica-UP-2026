@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" role="img" aria-label="Pronostica Pantera">
+  <rect width="32" height="32" rx="7" fill="#0a3d28" />
+  <!-- brand stripe -->
+  <rect x="6" y="27" width="20" height="2" rx="1" fill="#d4f226" />
+  <g stroke="#f5a623" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="#f5a623">
+    <!-- cup -->
+    <path d="M10.5 6.5 H21.5 V9 C21.5 13.6 19 16.2 16 16.2 C13 16.2 10.5 13.6 10.5 9 Z" />
+    <!-- handles -->
+    <path d="M10.5 8 C6.6 8 6.6 12.6 10.8 12.6" fill="none" />
+    <path d="M21.5 8 C25.4 8 25.4 12.6 21.2 12.6" fill="none" />
+    <!-- stem -->
+    <path d="M16 16.2 V19.5" fill="none" />
+    <!-- base -->
+    <path d="M13 19.5 H19 L20 23.8 H12 Z" />
+  </g>
+  <!-- "UP" engraved on the front of the cup -->
+  <text x="16" y="12.2" text-anchor="middle" font-family="Arial, Helvetica, sans-serif"
+        font-size="6.6" font-weight="800" letter-spacing="-0.3" fill="#0a3d28">UP</text>
+</svg>
