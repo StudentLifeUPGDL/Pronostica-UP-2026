@@ -73,6 +73,7 @@ team to those ids. If the dry run reports unmapped teams, fix **both**:
 | `Results` field | Source |
 | --- | --- |
 | `groups[X]` (1/2/3) | standings endpoint, positions 1–3 per group (written only once all three resolve) |
+| `bestThirds` | the group 3rd-placed teams that appear in an R32 fixture (lets the side-league brackets render the real "winner vs best 3rd" matchups) |
 | `r32/r16/qf/sfWinners` | winners of **finished** matches in that stage |
 | `champion` / `runnerUp` | winner / loser of the Final |
 | `thirdPlace` | winner of the third-place match |

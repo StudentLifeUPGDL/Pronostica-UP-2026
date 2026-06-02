@@ -40,8 +40,8 @@ export interface GroupPick {
   third: string;
 }
 
-// Which competition an entry belongs to. 'main' = original locked picks;
-// 'r32' / 'r16' = paid post-kickoff fix snapshots (their own leagues + prize pools).
+// Which competition an entry belongs to. 'main' = the main quiniela; 'r32' / 'r16' =
+// standalone side-league tournaments of the knockout (each its own league + prize pool).
 export type League = 'main' | 'r32' | 'r16';
 
 // Per-entry payment lifecycle, managed manually by the admin.
@@ -54,7 +54,6 @@ export interface Prediction {
   userDisplayName?: string;
   name: string;
   league: League;
-  parentId?: string;                  // for r32/r16 fixes: the MAIN entry they derive from
   createdAt: string;                  // ISO
   updatedAt?: string;                 // ISO
   lockedAt?: string;                  // ISO — when this version froze (kickoff / round start)
@@ -95,6 +94,7 @@ export interface GroupStandingRow {
 export interface Results {
   groups: Record<string, GroupResult>; // exact placements per group A–L (scored — written only once the group has played all its matches)
   groupTables?: Record<string, GroupStandingRow[]>; // live standings rows per group, in position order (display only, updates each match)
+  bestThirds?: string[];                // the (up to) 8 third-placed team IDs that advanced to R32; lets the bracket render the real "winner vs best 3rd" matchups
   r32Winners: string[];                 // 16 teams that won R32 (advanced to R16)
   r16Winners: string[];                 // 8 teams advancing to QF
   qfWinners: string[];                  // 4 teams advancing to SF
@@ -106,7 +106,7 @@ export interface Results {
 }
 
 export const EMPTY_RESULTS: Results = {
-  groups: {}, groupTables: {}, r32Winners: [], r16Winners: [], qfWinners: [], sfWinners: [],
+  groups: {}, groupTables: {}, bestThirds: [], r32Winners: [], r16Winners: [], qfWinners: [], sfWinners: [],
   champion: '', runnerUp: '', thirdPlace: '',
 };
 
@@ -117,8 +117,8 @@ export interface AppFees { main: number; r32: number; r16: number; }
 export interface AppConfig {
   lockDate: string;          // ISO — MAIN entries lock (kickoff)
   paymentDeadline: string;   // ISO — pending MAIN entries auto-void after this
-  r32StartDate: string;      // ISO — R32 fix freezes / R32 league locks
-  r16StartDate: string;      // ISO — R16 fix freezes / R16 league locks
+  r32StartDate: string;      // ISO — R32 league locks (join window closes at first R32 match)
+  r16StartDate: string;      // ISO — R16 league locks (join window closes at first R16 match)
   season: string;
   adminEmails: string[];     // UI fallback only; rules trust the custom claim
   maxPendingPerUser: number;
@@ -593,4 +593,19 @@ export function getTeam(id: string): Team {
 
 export function getGroupById(id: string): Group | undefined {
   return GROUPS.find(g => g.id === id);
+}
+
+// Human-friendly entry folio used as the Firestore doc id. Short, uppercase, and
+// drawn from an alphabet with no look-alike characters (no 0/O, 1/I/L) so it is
+// easy to read aloud, type into the payment form by hand, and reconcile by the
+// admin. Prefixed by competition: QM = main quiniela, R32 / R16 = side-leagues.
+const FOLIO_ALPHABET = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
+const FOLIO_PREFIX: Record<League, string> = { main: 'QM', r32: 'R32', r16: 'R16' };
+
+export function makeFolio(league: League): string {
+  let code = '';
+  for (let i = 0; i < 5; i++) {
+    code += FOLIO_ALPHABET[Math.floor(Math.random() * FOLIO_ALPHABET.length)];
+  }
+  return `${FOLIO_PREFIX[league]}-${code}`;
 }

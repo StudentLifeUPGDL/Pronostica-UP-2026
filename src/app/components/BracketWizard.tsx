@@ -1,13 +1,14 @@
 import { useState, useMemo, Dispatch, SetStateAction } from 'react';
 import {
-  ChevronLeft, ChevronRight, Save, Check, Trophy, Star,
+  ChevronLeft, ChevronRight, Save, Check, CheckCircle2, Copy, Trophy, Star,
   XCircle, MapPin, Calendar, Lock, AlertCircle,
 } from 'lucide-react';
 import {
   GROUPS, OFFICIAL_R32, R16_PAIRS, QF_PAIRS, SF_PAIRS, FINAL_INFO, BRONZE_INFO,
-  getTeam, Prediction, GroupPick, TeamSlot,
+  getTeam, makeFolio, Prediction, GroupPick, TeamSlot, Results, EMPTY_RESULTS,
 } from '../data/worldcup';
 import { resolveBest3rdAllocation } from '../data/r32ThirdsAllocation';
+import { PaymentCta } from './PaymentCta';
 
 // ─── Step config ──────────────────────────────────────────────────────────────
 
@@ -27,10 +28,10 @@ interface BracketWizardProps {
   userId: string;
   userEmail?: string;
   userDisplayName?: string;
-  mode?: 'main' | 'fixR32' | 'fixR16';
-  basePrediction?: Prediction | null;   // edit source (main) or prefill base (fix)
-  parentMainId?: string;                 // MAIN entry a fix derives from
-  onSave: (prediction: Prediction) => void;
+  mode?: 'main' | 'joinR32' | 'joinR16';
+  basePrediction?: Prediction | null;   // entry being edited (main or standalone side-league)
+  results?: Results;                     // real results, overlaid onto side-league brackets
+  onSave: (prediction: Prediction) => void | Promise<void>;
   onCancel: () => void;
   predictionName?: string;
 }
@@ -39,19 +40,47 @@ interface BracketWizardProps {
 
 export function BracketWizard({
   userId, userEmail, userDisplayName,
-  mode = 'main', basePrediction, parentMainId,
-  onSave, onCancel, predictionName = 'Mi Quinela',
+  mode = 'main', basePrediction, results = EMPTY_RESULTS,
+  onSave, onCancel, predictionName = 'Mi Quiniela',
 }: BracketWizardProps) {
   const name = mode === 'main' ? (basePrediction?.name ?? predictionName) : predictionName;
-  // In a fix, earlier phases are frozen; the user only re-picks from the fix round on.
-  const lockedSteps: Step[] = mode === 'fixR32' ? ['grupos', 'terceros']
-    : mode === 'fixR16' ? ['grupos', 'terceros', 'r32']
-    : [];
-  const firstEditable: Step = mode === 'fixR32' ? 'r32' : mode === 'fixR16' ? 'r16' : 'grupos';
+
+  // A standalone "join" entry (R32/R16 side-league): the player builds the whole
+  // combination, and `overlay` means real tournament results progressively replace
+  // the earlier-round picks (auto-update) so late joiners pick teams that advanced.
+  const isJoin = mode === 'joinR32' || mode === 'joinR16';
+  const overlay = isJoin;
+  const entryRound: 'r32' | 'r16' | null =
+    mode === 'joinR32' ? 'r32' : mode === 'joinR16' ? 'r16' : null;
+
+  const realGroups = results.groups ?? {};
+  const realBestThirds = results.bestThirds ?? [];
+  const realR32Winners = results.r32Winners ?? [];
+  const groupsAllReal = Object.keys(realGroups).length >= 12;
+  const thirdsAllReal = realBestThirds.length >= 8;
+  const r32AllReal = realR32Winners.length >= 16;
+
+  // A join entry leaves the earlier phases editable (the combination) but locks each
+  // one as its REAL result lands: groups → terceros → R32.
+  const lockedSteps: Step[] = (() => {
+    if (!isJoin) return [];
+    const locked: Step[] = [];
+    if (groupsAllReal) locked.push('grupos');
+    if (thirdsAllReal) locked.push('terceros');
+    if (mode === 'joinR16' && r32AllReal) locked.push('r32');
+    return locked;
+  })();
+  const firstEditable: Step = STEPS.find(s => !lockedSteps.includes(s)) ?? 'grupos';
   const isLocked = (s: Step) => lockedSteps.includes(s);
   const [step, setStep] = useState<Step>(firstEditable);
   const [activeGroup, setActiveGroup] = useState('A');
   const [navError, setNavError] = useState('');
+  // Save lifecycle: while saving, buttons disable; on success `saved` holds the
+  // persisted entry so we can show the confirmation screen (with its folio).
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
+  const [saved, setSaved] = useState<{ pred: Prediction; isEdit: boolean } | null>(null);
+  const [copied, setCopied] = useState(false);
 
   // ─── Prediction state ─────────────────────────────────────────────────────
 
@@ -67,20 +96,36 @@ export function BracketWizard({
 
   // ─── Derived data ─────────────────────────────────────────────────────────
 
+  // For side-league entries, real group results override the player's combination
+  // as they arrive; `main` entries are pre-tournament and never overlaid.
+  const effectiveGroups = useMemo<Record<string, GroupPick>>(
+    () => (overlay ? { ...groups, ...realGroups } : groups),
+    [overlay, groups, realGroups],
+  );
+
+  // Once the real set of advancing thirds is published, it overrides the player's
+  // elimination guess (eliminated = the group thirds that did NOT advance).
+  const effectiveElim = useMemo<string[]>(() => {
+    // Only override once the full real set of 8 advancing thirds is published.
+    if (!overlay || realBestThirds.length < 8) return elim3rd;
+    const thirds = GROUPS.map(g => effectiveGroups[g.id]?.third).filter(Boolean) as string[];
+    return thirds.filter(t => !realBestThirds.includes(t));
+  }, [overlay, realBestThirds, effectiveGroups, elim3rd]);
+
   const allThirds = useMemo(() =>
-    GROUPS.map(g => ({ group: g.id, teamId: groups[g.id]?.third ?? '' })).filter(t => t.teamId),
-    [groups],
+    GROUPS.map(g => ({ group: g.id, teamId: effectiveGroups[g.id]?.third ?? '' })).filter(t => t.teamId),
+    [effectiveGroups],
   );
 
   const advancingThirds = useMemo(() =>
-    allThirds.filter(t => !elim3rd.includes(t.teamId)),
-    [allThirds, elim3rd],
+    allThirds.filter(t => !effectiveElim.includes(t.teamId)),
+    [allThirds, effectiveElim],
   );
 
   // R32 best-third matchups are NOT a guess. Once the 8 advancing thirds are
   // known, FIFA's regulations (Annex C, 495 pre-published scenarios) fix exactly
   // which third plays each "group winner vs best third" match. So we derive the
-  // assignment automatically from the user's group + 3rd-place picks instead of
+  // assignment automatically from the (effective) group + 3rd-place data instead of
   // asking them to slot teams by hand.  matchId → teamId of the assigned third.
   const r32Thirds = useMemo<Record<string, string>>(() => {
     const advGroups = advancingThirds.map(t => t.group);
@@ -89,31 +134,48 @@ export function BracketWizard({
     if (!alloc) return {};
     const out: Record<string, string> = {};
     for (const [matchId, groupId] of Object.entries(alloc)) {
-      const teamId = groups[groupId]?.third;
+      const teamId = effectiveGroups[groupId]?.third;
       if (teamId) out[matchId] = teamId;
     }
     return out;
-  }, [advancingThirds, groups]);
+  }, [advancingThirds, effectiveGroups]);
 
-  // Resolve a slot to a team ID
+  // Resolve a slot to a team ID (uses the real-overlaid groups/thirds).
   function resolveSlot(slot: TeamSlot, matchId: string): string | undefined {
     if (slot.type === 'pos') {
-      const pick = groups[slot.group];
+      const pick = effectiveGroups[slot.group];
       if (!pick) return undefined;
       return (slot.pos === 1 ? pick.first : pick.second) || undefined;
     }
     return r32Thirds[matchId] || undefined;
   }
 
+  // R16 matchups need each R32 match's winner. For an R16 side-league entry those
+  // come from the REAL R32 results once known (each match's real winner is the one
+  // participant that appears in r32Winners); otherwise the player's own R32 picks.
+  const effectiveR32 = useMemo<Record<string, string>>(() => {
+    if (entryRound !== 'r16' || realR32Winners.length === 0) return r32;
+    const winners = new Set(realR32Winners);
+    const out: Record<string, string> = { ...r32 };
+    for (const m of OFFICIAL_R32) {
+      const home = resolveSlot(m.home, m.id);
+      const away = resolveSlot(m.away, m.id);
+      const realWinner = [home, away].find(t => t && winners.has(t));
+      if (realWinner) out[m.id] = realWinner;
+    }
+    return out;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [entryRound, realR32Winners, r32, effectiveGroups, r32Thirds]);
+
   // ─── Step completion ──────────────────────────────────────────────────────
 
   function gruposComplete() {
     return GROUPS.every(g => {
-      const p = groups[g.id];
+      const p = effectiveGroups[g.id];
       return p?.first && p?.second && p?.third;
     });
   }
-  function tercerosComplete() { return elim3rd.length === 4; }
+  function tercerosComplete() { return effectiveElim.length === 4; }
   function r32Complete() {
     return OFFICIAL_R32.every(m => {
       const homeId = resolveSlot(m.home, m.id);
@@ -121,7 +183,7 @@ export function BracketWizard({
       if (!homeId || !awayId) return false;
       // The winner must be one of the two teams actually playing this match,
       // so changing earlier picks invalidates a now-impossible winner.
-      return r32[m.id] === homeId || r32[m.id] === awayId;
+      return effectiveR32[m.id] === homeId || effectiveR32[m.id] === awayId;
     });
   }
   function r16Complete() { return R16_PAIRS.every(p => r16[p.id]); }
@@ -153,16 +215,16 @@ export function BracketWizard({
   function getMissingMessage(s: Step): string {
     switch (s) {
       case 'grupos': {
-        const miss = GROUPS.filter(g => { const p = groups[g.id]; return !p?.first || !p?.second || !p?.third; });
+        const miss = GROUPS.filter(g => { const p = effectiveGroups[g.id]; return !p?.first || !p?.second || !p?.third; });
         return `Completa los grupos: ${miss.map(g => g.id).join(', ')}`;
       }
       case 'terceros':
-        return `Elimina ${4 - elim3rd.length} equipo(s) más`;
+        return `Elimina ${4 - effectiveElim.length} equipo(s) más`;
       case 'r32': {
         const pending = OFFICIAL_R32.filter(m => {
           const homeId = resolveSlot(m.home, m.id);
           const awayId = resolveSlot(m.away, m.id);
-          return !homeId || !awayId || (r32[m.id] !== homeId && r32[m.id] !== awayId);
+          return !homeId || !awayId || (effectiveR32[m.id] !== homeId && effectiveR32[m.id] !== awayId);
         });
         return `Selecciona el ganador de ${pending.length} partido(s)`;
       }
@@ -209,35 +271,62 @@ export function BracketWizard({
     setStep(s);
   }
 
-  function handleSave() {
-    const isMainEdit = mode === 'main' && !!basePrediction && basePrediction.league === 'main';
-    const league: 'main' | 'r32' | 'r16' = mode === 'fixR32' ? 'r32' : mode === 'fixR16' ? 'r16' : 'main';
-    const id = isMainEdit
-      ? basePrediction!.id
-      : league === 'main' ? `pred-${Date.now()}` : `fix-${league}-${Date.now()}`;
+  async function handleSave() {
+    if (saving) return;
+    const league: 'main' | 'r32' | 'r16' =
+      mode === 'joinR32' ? 'r32' : mode === 'joinR16' ? 'r16' : 'main';
+    // Re-editing an existing entry (a main, or a standalone side-league entry) keeps
+    // its folio, creation time and payment status.
+    const isEdit = !!basePrediction && basePrediction.league === league;
+    // Re-edits keep their folio; new entries get a short, human-friendly one.
+    const id = isEdit ? basePrediction!.id : makeFolio(league);
     const nowIso = new Date().toISOString();
-    onSave({
+    const pred: Prediction = {
       id,
       uid: userId,
       userEmail,
       userDisplayName,
       name,
       league,
-      parentId: league === 'main' ? undefined : parentMainId,
-      createdAt: isMainEdit ? basePrediction!.createdAt : nowIso,
+      createdAt: isEdit ? basePrediction!.createdAt : nowIso,
       updatedAt: nowIso,
-      groups, eliminatedThird: elim3rd, r32Thirds,
-      r32, r16, qf, sf, champion, runnerUp, thirdPlace,
-      paymentStatus: isMainEdit ? basePrediction!.paymentStatus : 'pending',
-      paidAt: isMainEdit ? basePrediction!.paidAt : undefined,
-      points: isMainEdit ? basePrediction!.points : 0,
-    });
+      groups: effectiveGroups, eliminatedThird: effectiveElim, r32Thirds,
+      r32: effectiveR32, r16, qf, sf, champion, runnerUp, thirdPlace,
+      paymentStatus: isEdit ? basePrediction!.paymentStatus : 'pending',
+      paidAt: isEdit ? basePrediction!.paidAt : undefined,
+      points: isEdit ? basePrediction!.points : 0,
+    };
+    setSaving(true);
+    setSaveError('');
+    try {
+      await onSave(pred);
+      // Keep the wizard mounted and reveal the confirmation screen with the folio.
+      setSaved({ pred, isEdit });
+    } catch (e) {
+      setSaveError((e as Error)?.message ?? 'No se pudo guardar la quiniela.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function copyFolio() {
+    if (!saved) return;
+    try {
+      await navigator.clipboard.writeText(saved.pred.id);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    } catch {
+      // clipboard unavailable (insecure context) — folio is still visible to copy by hand
+    }
   }
 
   // ─── Group picks ──────────────────────────────────────────────────────────
 
+  // A group whose REAL result is already in can't be edited (it shows reality).
+  const groupLocked = (groupId: string) => overlay && !!realGroups[groupId];
+
   function getGroupPos(groupId: string, teamId: string): '1°' | '2°' | '3°' | '' {
-    const g = groups[groupId];
+    const g = effectiveGroups[groupId];
     if (!g) return '';
     if (g.first  === teamId) return '1°';
     if (g.second === teamId) return '2°';
@@ -246,6 +335,7 @@ export function BracketWizard({
   }
 
   function pickGroupTeam(groupId: string, teamId: string) {
+    if (groupLocked(groupId)) return;
     const group = GROUPS.find(g => g.id === groupId)!;
     const cur = groups[groupId] ?? { first: '', second: '', third: '' };
     let { first, second, third } = cur;
@@ -297,7 +387,7 @@ export function BracketWizard({
         {/* Group tabs */}
         <div className="flex flex-wrap gap-1.5 mb-4">
           {'ABCDEFGHIJKL'.split('').map(g => {
-            const gp = groups[g];
+            const gp = effectiveGroups[g];
             const ok = gp?.first && gp?.second && gp?.third;
             return (
               <button key={g} onClick={() => setActiveGroup(g)}
@@ -356,7 +446,7 @@ export function BracketWizard({
         {/* Summary grid */}
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
           {GROUPS.map(g => {
-            const gp = groups[g.id];
+            const gp = effectiveGroups[g.id];
             const ok = gp?.first && gp?.second && gp?.third;
             return (
               <button key={g.id} onClick={() => setActiveGroup(g.id)}
@@ -436,7 +526,7 @@ export function BracketWizard({
         {/* 12 thirds grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {GROUPS.map(g => {
-            const gp = groups[g.id];
+            const gp = effectiveGroups[g.id];
             const teamId = gp?.third ?? '';
             const team = teamId ? getTeam(teamId) : null;
             const isElim = elim3rd.includes(teamId);
@@ -749,8 +839,8 @@ export function BracketWizard({
         <p style={{ color: '#7eb89a', fontSize: '0.82rem', marginBottom: '14px' }}>Elige el ganador de cada octavo de final.</p>
         {renderRound(
           R16_PAIRS,
-          p => r32[p.r32a],
-          p => r32[p.r32b],
+          p => effectiveR32[p.r32a],
+          p => effectiveR32[p.r32b],
           r16, setR16,
         )}
       </div>
@@ -869,6 +959,60 @@ export function BracketWizard({
   const currentComplete = isStepComplete(step);
   const isLast = stepIdx === STEPS.length - 1;
 
+  // ── Confirmation screen (shown after a successful save) ──
+  if (saved) {
+    const showPayment = saved.pred.paymentStatus !== 'paid';
+    return (
+      <div className="max-w-2xl mx-auto px-4 py-10">
+        <div className="rounded-2xl p-8 text-center" style={{ background: '#0d5035', border: '1px solid rgba(74,222,128,0.25)' }}>
+          <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ background: 'rgba(74,222,128,0.12)' }}>
+            <CheckCircle2 size={30} style={{ color: '#4ade80' }} />
+          </div>
+          <h1 style={{ fontFamily: 'Oswald, sans-serif', color: '#4ade80', fontSize: '1.5rem', fontWeight: 700, letterSpacing: '0.04em' }}>
+            {saved.isEdit ? '¡QUINIELA ACTUALIZADA!' : '¡QUINIELA GUARDADA!'}
+          </h1>
+          <p style={{ color: '#9cc4b2', fontSize: '0.86rem', marginTop: '6px' }}>{saved.pred.name}</p>
+
+          {/* Folio */}
+          <div className="mt-6 rounded-xl p-5" style={{ background: '#083524', border: '1px solid rgba(245,166,35,0.25)' }}>
+            <div style={{ fontFamily: 'Oswald, sans-serif', color: '#7eb89a', fontSize: '0.7rem', letterSpacing: '0.12em', marginBottom: '10px' }}>TU FOLIO</div>
+            <button onClick={copyFolio} title="Copiar folio"
+              className="inline-flex items-center gap-2.5 rounded-xl cursor-pointer transition-all"
+              style={{ background: 'rgba(245,166,35,0.1)', border: '1px solid rgba(245,166,35,0.3)', padding: '10px 18px', fontFamily: 'DM Mono', color: '#f5a623', fontSize: '1.4rem', letterSpacing: '0.06em' }}>
+              {saved.pred.id}
+              {copied ? <Check size={18} style={{ color: '#4ade80' }} /> : <Copy size={18} style={{ color: '#9cc4b2' }} />}
+            </button>
+            <div style={{ color: copied ? '#4ade80' : '#4a7d65', fontSize: '0.72rem', fontFamily: 'DM Mono', marginTop: '10px' }}>
+              {copied ? '✓ copiado al portapapeles' : 'toca para copiar'}
+            </div>
+          </div>
+
+          {showPayment ? (
+            <>
+              <p style={{ color: '#c0d8cc', fontSize: '0.84rem', marginTop: '18px', lineHeight: 1.6 }}>
+                Anota tu folio: lo necesitas para <strong style={{ color: '#d4f226' }}>confirmar tu pago</strong>. Ya viene
+                incluido en el formulario, pero guárdalo por si tienes que escribirlo a mano.
+              </p>
+              <div className="mt-4 flex justify-center">
+                <PaymentCta prediction={saved.pred} email={userEmail} />
+              </div>
+            </>
+          ) : (
+            <p style={{ color: '#c0d8cc', fontSize: '0.84rem', marginTop: '18px' }}>
+              Esta quiniela ya está pagada. Tu folio queda como referencia.
+            </p>
+          )}
+
+          <button onClick={onCancel}
+            className="mt-7 inline-flex items-center gap-2 px-6 py-3 rounded-xl cursor-pointer"
+            style={{ background: '#f5a623', color: '#062b1a', fontFamily: 'Oswald, sans-serif', fontWeight: 700, fontSize: '0.86rem', letterSpacing: '0.05em' }}>
+            IR A MIS QUINIELAS <ChevronRight size={16} />
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-4xl mx-auto px-4 py-6">
       {/* Header */}
@@ -876,7 +1020,9 @@ export function BracketWizard({
         <div>
           <h1 style={{ fontFamily: 'Oswald, sans-serif', color: '#f5a623', fontSize: '1.5rem', fontWeight: 700, letterSpacing: '0.04em' }}>{name}</h1>
           <p style={{ color: mode === 'main' ? '#4a7d65' : '#c084fc', fontSize: '0.7rem', fontFamily: 'DM Mono' }}>
-            {mode === 'main' ? (userDisplayName ?? '') : `LIGA APARTE · ARREGLO ${mode === 'fixR32' ? 'R32' : 'R16'}`}
+            {mode === 'main'
+              ? (userDisplayName ?? '')
+              : `LIGA APARTE · ${entryRound === 'r32' ? 'DIECISEISAVOS (R32)' : 'OCTAVOS (R16)'}`}
           </p>
         </div>
         <button onClick={onCancel} style={{ color: '#7eb89a', fontSize: '0.76rem', fontFamily: 'DM Mono', cursor: 'pointer' }}>← Volver</button>
@@ -934,9 +1080,11 @@ export function BracketWizard({
         {isLocked(step) ? (
           <div className="rounded-xl p-5 text-center" style={{ background: 'rgba(192,132,252,0.06)', border: '1px solid rgba(192,132,252,0.2)' }}>
             <Lock size={20} style={{ color: '#c084fc', margin: '0 auto 8px' }} />
-            <div style={{ fontFamily: 'Oswald, sans-serif', color: '#c084fc', fontSize: '0.9rem', letterSpacing: '0.05em' }}>FASE FIJA</div>
+            <div style={{ fontFamily: 'Oswald, sans-serif', color: '#c084fc', fontSize: '0.9rem', letterSpacing: '0.05em' }}>
+              FASE DEFINIDA
+            </div>
             <p style={{ color: '#9cc4b2', fontSize: '0.82rem', marginTop: '6px', fontFamily: 'Nunito Sans' }}>
-              En este arreglo conservas tus picks de esta fase. Avanza para volver a elegir desde {STEP_LABELS[firstEditable]}.
+              Los resultados reales ya definieron esta fase. Avanza para armar tu cuadro desde {STEP_LABELS[firstEditable]}.
             </p>
           </div>
         ) : (
@@ -963,22 +1111,33 @@ export function BracketWizard({
         </div>
       )}
 
+      {/* Save error banner */}
+      {saveError && (
+        <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl mb-3"
+          style={{ background: 'rgba(230,57,70,0.08)', border: '1px solid rgba(230,57,70,0.22)' }}>
+          <AlertCircle size={14} style={{ color: '#e63946', flexShrink: 0 }} />
+          <span style={{ color: '#e63946', fontSize: '0.8rem', fontFamily: 'Nunito Sans, sans-serif' }}>
+            {saveError}
+          </span>
+        </div>
+      )}
+
       {/* Navigation */}
       <div className="flex items-center justify-between gap-3">
-        <button onClick={handlePrev} disabled={stepIdx === 0}
+        <button onClick={handlePrev} disabled={stepIdx === 0 || saving}
           className="flex items-center gap-1.5 px-4 py-2.5 rounded-lg cursor-pointer transition-all disabled:opacity-30"
           style={{ background: '#0d5035', color: '#7eb89a', fontFamily: 'Oswald, sans-serif', fontSize: '0.82rem', letterSpacing: '0.05em', border: '1px solid rgba(255,255,255,0.07)' }}>
           <ChevronLeft size={15} /> ANTERIOR
         </button>
 
-        <button onClick={handleSave}
-          className="flex items-center gap-1.5 px-4 py-2.5 rounded-lg cursor-pointer"
+        <button onClick={handleSave} disabled={saving}
+          className="flex items-center gap-1.5 px-4 py-2.5 rounded-lg cursor-pointer disabled:opacity-50"
           style={{ background: 'rgba(74,222,128,0.12)', color: '#4ade80', fontFamily: 'Oswald, sans-serif', fontSize: '0.82rem', letterSpacing: '0.05em', border: '1px solid rgba(74,222,128,0.22)' }}>
-          <Save size={14} /> GUARDAR
+          <Save size={14} /> {saving ? 'GUARDANDO…' : 'GUARDAR'}
         </button>
 
-        <button onClick={isLast ? handleSave : handleNext}
-          className="flex items-center gap-1.5 px-4 py-2.5 rounded-lg cursor-pointer transition-all"
+        <button onClick={isLast ? handleSave : handleNext} disabled={saving}
+          className="flex items-center gap-1.5 px-4 py-2.5 rounded-lg cursor-pointer transition-all disabled:opacity-50"
           style={{
             background: isLast ? '#f5a623' : currentComplete ? '#0d5035' : 'rgba(255,255,255,0.04)',
             color: isLast ? '#062b1a' : currentComplete ? '#7eb89a' : '#3a6b55',
@@ -986,7 +1145,7 @@ export function BracketWizard({
             border: currentComplete || isLast ? 'none' : '1px solid rgba(255,255,255,0.05)',
           }}>
           {!currentComplete && !isLast && <Lock size={13} />}
-          {isLast ? <><Save size={14}/> FINALIZAR</> : <>SIGUIENTE <ChevronRight size={15}/></>}
+          {isLast ? <><Save size={14}/> {saving ? 'GUARDANDO…' : 'FINALIZAR'}</> : <>SIGUIENTE <ChevronRight size={15}/></>}
         </button>
       </div>
     </div>

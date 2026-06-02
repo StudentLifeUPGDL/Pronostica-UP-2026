@@ -1,4 +1,4 @@
-import type { Prediction, Results } from '../app/data/worldcup';
+import type { Prediction, Results, League } from '../app/data/worldcup';
 
 // ─── Point values (from the rules table in ExplanationsPage) ──────────────────
 // Group points require the EXACT finishing position. Knockout points use a
@@ -70,18 +70,34 @@ export function computeScore(p: Prediction, r: Results): ScoreBreakdown {
   return { groups, r32, r16, qf, sf, champion, runnerUp, thirdPlace, total };
 }
 
+// Points that count toward a league's standings. Each league is scored only from
+// its own round onward, so entries that didn't predict the earlier rounds (e.g. a
+// standalone R32/R16 entry with no group picks) compete on equal footing:
+//   • main → everything
+//   • r32  → R32 onward (group points excluded)
+//   • r16  → R16 onward (group + R32 excluded)
+export function leagueScore(b: ScoreBreakdown, league: League): number {
+  if (league === 'r32') return b.total - b.groups;
+  if (league === 'r16') return b.total - b.groups - b.r32;
+  return b.total;
+}
+
 export interface RankedEntry {
   prediction: Prediction;
   score: ScoreBreakdown;
+  leagueTotal: number;   // score within the entry's own league scope (use this for standings)
   rank: number;
 }
 
-// Ranks by total points DESC, ties broken by earliest submission (createdAt ASC).
-// createdAt timestamps are effectively unique, so this yields a single winner.
+// Ranks by league-scoped points DESC, ties broken by earliest submission (createdAt
+// ASC). createdAt timestamps are effectively unique, so this yields a single winner.
 export function rankPredictions(preds: Prediction[], results: Results): RankedEntry[] {
-  const scored = preds.map(p => ({ prediction: p, score: computeScore(p, results) }));
+  const scored = preds.map(p => {
+    const score = computeScore(p, results);
+    return { prediction: p, score, leagueTotal: leagueScore(score, p.league) };
+  });
   scored.sort((a, b) => {
-    if (b.score.total !== a.score.total) return b.score.total - a.score.total;
+    if (b.leagueTotal !== a.leagueTotal) return b.leagueTotal - a.leagueTotal;
     return (a.prediction.createdAt ?? '').localeCompare(b.prediction.createdAt ?? '');
   });
   return scored.map((e, i) => ({ ...e, rank: i + 1 }));

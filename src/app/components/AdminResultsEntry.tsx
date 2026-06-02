@@ -103,10 +103,10 @@ export function AdminResultsEntry({ config, onSaved }: { config: AppConfig; onSa
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {([
-            ['lockDate', 'Cierre quinela principal (kickoff)'],
+            ['lockDate', 'Cierre quiniela principal (kickoff)'],
             ['paymentDeadline', 'Fecha límite de pago (anula pendientes)'],
-            ['r32StartDate', 'Inicio R32 (cierra arreglo R32)'],
-            ['r16StartDate', 'Inicio R16 (cierra arreglo R16)'],
+            ['r32StartDate', 'Inicio R32 (cierra Liga R32)'],
+            ['r16StartDate', 'Inicio R16 (cierra Liga R16)'],
           ] as const).map(([key, label]) => (
             <label key={key} className="flex flex-col gap-1">
               <span style={labelStyle}>{label}</span>
@@ -116,8 +116,8 @@ export function AdminResultsEntry({ config, onSaved }: { config: AppConfig; onSa
           ))}
           {([
             ['main', 'Cuota principal'],
-            ['r32', 'Cuota arreglo R32'],
-            ['r16', 'Cuota arreglo R16'],
+            ['r32', 'Cuota Liga R32'],
+            ['r16', 'Cuota Liga R16'],
           ] as const).map(([key, label]) => (
             <label key={key} className="flex flex-col gap-1">
               <span style={labelStyle}>{label} ({cfg.currency})</span>
@@ -136,7 +136,7 @@ export function AdminResultsEntry({ config, onSaved }: { config: AppConfig; onSa
               onChange={e => setCfg({ ...cfg, payoutRoundTo: Number(e.target.value) })} style={inputStyle} />
           </label>
           <label className="flex flex-col gap-1">
-            <span style={labelStyle}>Máx. quinelas con pago pendiente</span>
+            <span style={labelStyle}>Máx. quinielas con pago pendiente</span>
             <input type="number" min={1} value={cfg.maxPendingPerUser}
               onChange={e => setCfg({ ...cfg, maxPendingPerUser: Number(e.target.value) })} style={inputStyle} />
           </label>
@@ -180,6 +180,10 @@ export function AdminResultsEntry({ config, onSaved }: { config: AppConfig; onSa
               </div>
             );
           })}
+        </div>
+
+        <div className="mb-5">
+          <MultiTeam label="Mejores 3ros que avanzan a R32 (arma los cruces de las ligas aparte)" expected={8} value={results.bestThirds ?? []} onChange={v => setResults(r => ({ ...r, bestThirds: v }))} />
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">

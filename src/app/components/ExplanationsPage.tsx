@@ -90,7 +90,7 @@ export function ExplanationsPage({ config }: { config: AppConfig }) {
           <BulletItem>Crea <strong>múltiples quinielas</strong> (máx. {config.maxPendingPerUser} con pago pendiente a la vez).</BulletItem>
           <BulletItem>Accede con tu <strong>correo y contraseña</strong>, con verificación por email.</BulletItem>
           <BulletItem>Los picks deben hacerse <strong>antes del inicio del torneo</strong> (11 junio 2026).</BulletItem>
-          <BulletItem>Tras el inicio puedes comprar <strong>arreglos</strong> de R32 y R16 que compiten en ligas aparte.</BulletItem>
+          <BulletItem>Entra a las <strong>Ligas Aparte</strong> de R32 y R16: torneos independientes de la eliminatoria, sin necesidad de la quiniela principal.</BulletItem>
         </Card>
 
         {/* Cómo participar */}
@@ -188,7 +188,7 @@ export function ExplanationsPage({ config }: { config: AppConfig }) {
           {[
             { q: '¿Cuándo cierran los pronósticos?', a: 'Los picks se bloquean al inicio del primer partido: jueves 11 de junio de 2026.' },
             { q: '¿Puedo cambiar mi quiniela antes del cierre?', a: 'Sí, puedes editarla cuantas veces quieras hasta el cierre.' },
-            { q: '¿Qué son los "arreglos" de R32 y R16?', a: 'Tras el inicio del torneo puedes pagar para volver a pronosticar desde dieciseisavos (R32) u octavos (R16). Cada arreglo compite en su propia liga con premio aparte; no afecta tu quiniela principal.' },
+            { q: '¿Qué son las Ligas Aparte de R32 y R16?', a: 'Son torneos independientes de la fase eliminatoria, que no requieren la quiniela principal. Eliges una combinación que arma tu cuadro desde dieciseisavos (R32) u octavos (R16); los equipos se actualizan solos conforme avanzan los resultados, así que quien entra más tarde ya sabe qué equipos pasaron y elige mejor. Cada liga tiene su propio premio.' },
             { q: '¿Cómo veo quién va ganando?', a: 'La clasificación general es privada del organizador. Tú ves los puntos de tus propias quinielas en el inicio.' },
             { q: '¿Cómo confirmo mi pago?', a: 'Al guardar una quiniela, usa el botón "Confirmar transferencia" para enviar tu comprobante en el formulario. El organizador marca tu pago como confirmado.' },
           ].map((faq, i) => (

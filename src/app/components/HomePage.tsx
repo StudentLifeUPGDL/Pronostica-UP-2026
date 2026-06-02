@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Users, Trophy, Star, Calendar, Wallet, Wrench } from 'lucide-react';
+import { Users, Trophy, Star, Calendar, Wallet, Swords } from 'lucide-react';
 import { FULL_SCHEDULE, GROUPS, getTeam, type Prediction, type Results, type AppConfig } from '../data/worldcup';
 import { computeScore } from '../../lib/scoring';
 import { leagueLabel } from '../../lib/payment';
@@ -61,7 +61,7 @@ function StatCard({ icon, value, label }: { icon: React.ReactNode; value: string
 export function HomePage({ userName, onNavigate, predictions, results, config }: HomePageProps) {
   const mains = predictions.filter(p => p.league === 'main');
   const paidCount = mains.filter(p => p.paymentStatus === 'paid').length;
-  const fixes = predictions.filter(p => p.league !== 'main');
+  const sideEntries = predictions.filter(p => p.league !== 'main');
   const msLeft = new Date(config.lockDate).getTime() - Date.now();
   const daysLeft = Math.max(0, Math.ceil(msLeft / 86400000));
 
@@ -116,7 +116,7 @@ export function HomePage({ userName, onNavigate, predictions, results, config }:
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
         <StatCard icon={<Star size={18} style={{ color: '#d4f226' }} />} value={mains.length} label="TUS QUINIELAS" />
         <StatCard icon={<Wallet size={18} style={{ color: '#4ade80' }} />} value={paidCount} label="PAGADAS" />
-        <StatCard icon={<Wrench size={18} style={{ color: '#c084fc' }} />} value={fixes.length} label="ARREGLOS" />
+        <StatCard icon={<Swords size={18} style={{ color: '#c084fc' }} />} value={sideEntries.length} label="LIGAS APARTE" />
         <StatCard icon={<Calendar size={18} style={{ color: '#7eb89a' }} />} value={daysLeft} label="DÍAS PARA EL INICIO" />
       </div>
 

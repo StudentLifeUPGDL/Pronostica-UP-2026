@@ -96,9 +96,9 @@ export async function saveMainPrediction(pred: Prediction, isNew: boolean): Prom
   await setDoc(doc(db, 'predictions', pred.id), stripUndefined(pred as unknown as Record<string, unknown>));
 }
 
-// Create a fix snapshot (r32 / r16 league). Eligibility (paid parent, window open,
-// one-fix-per-round) is checked by the caller; the open window is enforced by rules.
-export async function saveFix(pred: Prediction): Promise<void> {
+// Create or update a standalone side-league entry (r32 / r16 tournament). These are
+// independent of the main quiniela; the open join window is enforced by the rules.
+export async function saveSideEntry(pred: Prediction): Promise<void> {
   await setDoc(doc(db, 'predictions', pred.id), stripUndefined(pred as unknown as Record<string, unknown>));
 }
 

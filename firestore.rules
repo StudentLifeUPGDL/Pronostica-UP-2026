@@ -10,9 +10,8 @@ rules_version = '2';
 //                              that league's window is open, and cannot self-mark paid;
 //                              admin reads all and manages paymentStatus.
 //
-// NOTE (client-enforced, not security boundaries): the "max 5 pending" cap, the
-// payment-deadline auto-void, "MAIN must be paid before buying a fix", and "one R32 +
-// one R16 fix per entry". These are courtesy/business rules; a Cloud Function can
+// NOTE (client-enforced, not security boundaries): the "max 5 pending" cap and the
+// payment-deadline auto-void. These are courtesy/business rules; a Cloud Function can
 // harden them later. config/app MUST be seeded for these get()s to resolve.
 
 service cloud.firestore {

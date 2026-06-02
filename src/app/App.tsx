@@ -6,7 +6,7 @@ import {
 import { useAuth } from '../lib/auth';
 import {
   fetchMyPredictions, fetchConfig, fetchResults,
-  saveMainPrediction, saveFix, deletePrediction,
+  saveMainPrediction, saveSideEntry, deletePrediction,
 } from '../lib/predictions';
 import { AuthPage } from './components/AuthPage';
 import { VerifyEmailNotice } from './components/VerifyEmailNotice';
@@ -20,12 +20,11 @@ import { AdminReport } from './components/AdminReport';
 import { AdminResultsEntry } from './components/AdminResultsEntry';
 
 export type Page = 'home' | 'results' | 'bracket' | 'my-predictions' | 'explanations' | 'admin';
-type WizardMode = 'main' | 'fixR32' | 'fixR16';
+type WizardMode = 'main' | 'joinR32' | 'joinR16';
 
 interface WizardState {
   mode: WizardMode;
   base: Prediction | null;
-  parentMainId?: string;
   name: string;
 }
 
@@ -86,13 +85,14 @@ export default function App() {
     else { setPredictions([]); setWizard(null); }
   }, [uid, reloadData]);
 
-  // ─── Lock / fix windows ─────────────────────────────────────────────────────
+  // ─── Lock / join windows ────────────────────────────────────────────────────
   const now = Date.now();
   const lockPassed = now >= new Date(config.lockDate).getTime();
-  const groupResultsReady = Object.keys(results.groups).length >= 12;
-  const r32ResultsReady = results.r32Winners.length >= 16;
-  const r32WindowOpen = groupResultsReady && now < new Date(config.r32StartDate).getTime();
-  const r16WindowOpen = r32ResultsReady && now < new Date(config.r16StartDate).getTime();
+  // Side-league join windows: open to anyone (no main needed) until that round's
+  // first match. Players seed a provisional bracket now; it auto-updates to the real
+  // teams as results arrive, so late joiners can pick from teams that already advanced.
+  const r32JoinOpen = now < new Date(config.r32StartDate).getTime();
+  const r16JoinOpen = now < new Date(config.r16StartDate).getTime();
 
   // ─── Navigation / wizard ────────────────────────────────────────────────────
   function handleNavigate(page: Page) {
@@ -102,52 +102,51 @@ export default function App() {
   }
 
   function handleNewPrediction() {
-    if (!isVerified) { setActionError('Verifica tu correo para crear quinelas.'); return; }
-    if (lockPassed) { setActionError('El torneo ya inició: no se pueden crear nuevas quinelas.'); return; }
+    if (!isVerified) { setActionError('Verifica tu correo para crear quinielas.'); return; }
+    if (lockPassed) { setActionError('El torneo ya inició: no se pueden crear nuevas quinielas.'); return; }
     const n = predictions.filter(p => p.league === 'main').length + 1;
-    setWizard({ mode: 'main', base: null, name: `Mi Quinela #${n}` });
+    setWizard({ mode: 'main', base: null, name: `Mi Quiniela #${n}` });
     setCurrentPage('bracket');
   }
 
   function handleEditPrediction(pred: Prediction) {
     if (!isVerified) { setActionError('Verifica tu correo para editar.'); return; }
+    // Standalone side-league entry (r32/r16): editable until its round starts.
+    if (pred.league !== 'main') {
+      const open = pred.league === 'r32' ? r32JoinOpen : r16JoinOpen;
+      if (!open) { setActionError('La ventana de esta liga ya cerró.'); return; }
+      setWizard({ mode: pred.league === 'r32' ? 'joinR32' : 'joinR16', base: pred, name: pred.name });
+      setCurrentPage('bracket');
+      return;
+    }
     if (lockPassed) { setActionError('El torneo ya inició: los pronósticos quedaron bloqueados.'); return; }
     setWizard({ mode: 'main', base: pred, name: pred.name });
     setCurrentPage('bracket');
   }
 
-  function handleFix(mainPred: Prediction, round: 'r32' | 'r16') {
-    if (!isVerified) { setActionError('Verifica tu correo para arreglar tu quinela.'); return; }
-    // Build on the latest paid state: R16 fix uses the R32 fix snapshot if it exists.
-    let base = mainPred;
-    if (round === 'r16') {
-      const r32fix = predictions.find(p => p.parentId === mainPred.id && p.league === 'r32');
-      if (r32fix) base = r32fix;
-    }
+  function handleJoin(round: 'r32' | 'r16') {
+    if (!isVerified) { setActionError('Verifica tu correo para unirte a una liga.'); return; }
+    // Standalone entry: no parent main. The player builds a provisional combination
+    // that seeds the bracket; real results overlay it as they come in.
     setWizard({
-      mode: round === 'r32' ? 'fixR32' : 'fixR16',
-      base,
-      parentMainId: mainPred.id,
-      name: `${mainPred.name} · Arreglo ${round === 'r32' ? 'R32' : 'R16'}`,
+      mode: round === 'r32' ? 'joinR32' : 'joinR16',
+      base: null,
+      name: round === 'r32' ? 'Mi Quiniela R32 · Liga aparte' : 'Mi Quiniela R16 · Liga aparte',
     });
     setCurrentPage('bracket');
   }
 
   async function handleWizardSave(pred: Prediction) {
-    setActionError('');
-    try {
-      if (pred.league === 'main') {
-        const isNew = !predictions.some(p => p.id === pred.id);
-        await saveMainPrediction(pred, isNew);
-      } else {
-        await saveFix(pred);
-      }
-      setWizard(null);
-      setCurrentPage('my-predictions');
-      await reloadData();
-    } catch (e) {
-      setActionError((e as Error).message ?? 'No se pudo guardar la quinela.');
+    // Persist and refresh local data. Navigation is deferred: the wizard shows its
+    // own confirmation screen (with the folio) and closes via onCancel. Errors
+    // propagate so the wizard can surface them inline next to the save button.
+    if (pred.league === 'main') {
+      const isNew = !predictions.some(p => p.id === pred.id);
+      await saveMainPrediction(pred, isNew);
+    } else {
+      await saveSideEntry(pred);
     }
+    await reloadData();
   }
 
   async function handleDeletePrediction(id: string) {
@@ -202,8 +201,8 @@ export default function App() {
             userDisplayName={displayName}
             mode={wizard.mode}
             basePrediction={wizard.base}
-            parentMainId={wizard.parentMainId}
             predictionName={wizard.name}
+            results={results}
             onSave={handleWizardSave}
             onCancel={() => { setWizard(null); setCurrentPage('my-predictions'); }}
           />
@@ -226,13 +225,13 @@ export default function App() {
                 email={user.email ?? undefined}
                 lockPassed={lockPassed}
                 canSubmit={isVerified}
-                r32WindowOpen={r32WindowOpen}
-                r16WindowOpen={r16WindowOpen}
+                r32JoinOpen={r32JoinOpen}
+                r16JoinOpen={r16JoinOpen}
                 maxPending={config.maxPendingPerUser}
                 onNew={handleNewPrediction}
                 onEdit={handleEditPrediction}
                 onDelete={handleDeletePrediction}
-                onFix={handleFix}
+                onJoin={handleJoin}
               />
             )}
             {currentPage === 'explanations' && <ExplanationsPage config={config} />}
@@ -269,7 +268,7 @@ export default function App() {
       <footer style={{ borderTop: '1px solid rgba(255,255,255,0.06)', padding: '16px 24px', textAlign: 'center' }}>
         <div className="h-1 mb-3" style={{ background: 'repeating-linear-gradient(90deg, #f5a623 0px, #f5a623 8px, #d4f226 8px, #d4f226 16px, #0a3d28 16px, #0a3d28 24px)', borderRadius: '999px', maxWidth: '200px', margin: '0 auto 12px' }} />
         <p style={{ color: '#3a6b55', fontSize: '0.72rem', fontFamily: 'DM Mono, monospace', letterSpacing: '0.08em' }}>
-          PRONOSTICA PANTERA · MUNDIAL FIFA 2026 · EE.UU. · CANADÁ · MÉXICO
+          PRONOSTICA PANTERA · UNIVERSIDAD PANAMERICANA · MUNDIAL FIFA 2026 · EE.UU. · CANADÁ · MÉXICO
         </p>
       </footer>
     </div>

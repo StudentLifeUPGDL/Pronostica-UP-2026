@@ -12,8 +12,8 @@ export const paymentFormConfigured = Boolean(BASE);
 
 const LEAGUE_LABEL: Record<League, string> = {
   main: 'Quiniela principal',
-  r32: 'Arreglo Dieciseisavos (R32)',
-  r16: 'Arreglo Octavos (R16)',
+  r32: 'Liga Dieciseisavos (R32)',
+  r16: 'Liga Octavos (R16)',
 };
 
 export function leagueLabel(league: League): string {

@@ -229,6 +229,23 @@ function buildResults(standings, matches) {
   if (Object.keys(groups).length) out.groups = groups;
   if (Object.keys(groupTables).length) out.groupTables = groupTables;
 
+  // Best thirds: the group 3rd-placed teams that made it into an R32 fixture. This
+  // lets the app render the real "group winner vs best 3rd" R32 matchups (and, from
+  // those, the real R16 pairings) for the standalone side-league brackets. R32
+  // fixtures are seeded right after the group stage, so their teams are known even
+  // before those matches kick off.
+  const thirdIds = new Set(Object.values(groups).map((g) => g.third).filter(Boolean));
+  if (thirdIds.size) {
+    const r32Teams = new Set();
+    for (const m of matches.matches ?? []) {
+      if (STAGE_TO_ROUND[m.stage] !== 'r32') continue;
+      const h = resolveTeam(m.homeTeam); if (h) r32Teams.add(h);
+      const a = resolveTeam(m.awayTeam); if (a) r32Teams.add(a);
+    }
+    const best = [...thirdIds].filter((t) => r32Teams.has(t));
+    if (best.length) out.bestThirds = best;
+  }
+
   // Knockout winners per round, from FINISHED matches only.
   const finished = (matches.matches ?? []).filter((m) => m.status === 'FINISHED');
   const winnersByRound = { r32: new Set(), r16: new Set(), qf: new Set(), sf: new Set() };
@@ -285,6 +302,7 @@ function summarize(r) {
   if (inProgress.length) {
     lines.push(`  In progress (live display, unscored): ${inProgress.map(([g, p]) => `${g} ${p}/3`).join(', ')}`);
   }
+  if (r.bestThirds?.length) lines.push(`  Best thirds → R32 (${r.bestThirds.length}/8): ${names(r.bestThirds)}`);
   lines.push(`  R32 advanced (${r.r32Winners?.length ?? 0}/16): ${names(r.r32Winners)}`);
   lines.push(`  R16 advanced (${r.r16Winners?.length ?? 0}/8):  ${names(r.r16Winners)}`);
   lines.push(`  QF  advanced (${r.qfWinners?.length ?? 0}/4):  ${names(r.qfWinners)}`);

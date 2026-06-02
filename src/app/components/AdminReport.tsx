@@ -11,8 +11,8 @@ import {
 
 const LEAGUES: { key: League; label: string }[] = [
   { key: 'main', label: 'Liga Principal' },
-  { key: 'r32', label: 'Liga Arreglo R32' },
-  { key: 'r16', label: 'Liga Arreglo R16' },
+  { key: 'r32', label: 'Liga R32 (Dieciseisavos)' },
+  { key: 'r16', label: 'Liga R16 (Octavos)' },
 ];
 
 function money(n: number, currency: string) {
@@ -66,7 +66,7 @@ export function AdminReport({ config, results }: { config: AppConfig; results: R
     setBusy(true); setNote('');
     try {
       const n = await applyVoids();
-      setNote(n > 0 ? `${n} quinela(s) pendiente(s) anuladas por vencimiento.` : 'No hay pendientes vencidas que anular.');
+      setNote(n > 0 ? `${n} quiniela(s) pendiente(s) anuladas por vencimiento.` : 'No hay pendientes vencidas que anular.');
       await load();
     } catch {
       setError('No se pudieron aplicar las anulaciones.');
@@ -74,12 +74,12 @@ export function AdminReport({ config, results }: { config: AppConfig; results: R
   }
 
   function exportCsv() {
-    const rows = [['Liga', 'Quinela', 'Nombre', 'Email', 'Codigo', 'EstadoPago', 'Puntos', 'Campeon', 'Subcampeon', 'Tercero', 'Creado']];
+    const rows = [['Folio', 'Liga', 'Quiniela', 'Nombre', 'Email', 'Codigo', 'EstadoPago', 'Puntos', 'Campeon', 'Subcampeon', 'Tercero', 'Creado']];
     for (const p of preds) {
       const w = who(p);
-      const pts = rankPredictions([p], results)[0]?.score.total ?? 0;
+      const pts = rankPredictions([p], results)[0]?.leagueTotal ?? 0;
       rows.push([
-        leagueLabel(p.league), p.name, w.name, w.email, w.code, p.paymentStatus, String(pts),
+        p.id, leagueLabel(p.league), p.name, w.name, w.email, w.code, p.paymentStatus, String(pts),
         getTeam(p.champion).shortName || '', getTeam(p.runnerUp).shortName || '', getTeam(p.thirdPlace).shortName || '',
         p.createdAt,
       ]);
@@ -88,7 +88,7 @@ export function AdminReport({ config, results }: { config: AppConfig; results: R
     const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url; a.download = 'quinela-reporte.csv'; a.click();
+    a.href = url; a.download = 'quiniela-reporte.csv'; a.click();
     URL.revokeObjectURL(url);
   }
 
@@ -138,19 +138,19 @@ export function AdminReport({ config, results }: { config: AppConfig; results: R
             </div>
           </div>
           {s.ranked.length === 0 ? (
-            <div className="px-5 py-6 text-center" style={{ color: '#4a7d65', fontSize: '0.82rem' }}>Sin quinelas pagadas en esta liga.</div>
+            <div className="px-5 py-6 text-center" style={{ color: '#4a7d65', fontSize: '0.82rem' }}>Sin quinielas pagadas en esta liga.</div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full" style={{ borderCollapse: 'collapse', fontFamily: 'Nunito Sans' }}>
                 <thead>
                   <tr style={{ color: '#4a7d65', fontFamily: 'DM Mono', fontSize: '0.62rem', letterSpacing: '0.05em' }}>
-                    {['#', 'PARTICIPANTE', 'QUINELA', 'CAMP', 'SUB', '3°', 'PTS'].map(h => (
+                    {['#', 'PARTICIPANTE', 'QUINIELA', 'CAMP', 'SUB', '3°', 'PTS'].map(h => (
                       <th key={h} className="text-left px-3 py-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
-                  {s.ranked.map(({ prediction: p, score, rank }) => {
+                  {s.ranked.map(({ prediction: p, leagueTotal, rank }) => {
                     const w = who(p);
                     const isWinner = rank === 1;
                     return (
@@ -169,7 +169,7 @@ export function AdminReport({ config, results }: { config: AppConfig; results: R
                         <td className="px-3 py-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', fontSize: '0.78rem' }}>{teamFlag(p.runnerUp)}</td>
                         <td className="px-3 py-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', fontSize: '0.78rem' }}>{teamFlag(p.thirdPlace)}</td>
                         <td className="px-3 py-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                          <span style={{ color: '#f5a623', fontFamily: 'Oswald, sans-serif', fontWeight: 700 }}>{score.total}</span>
+                          <span style={{ color: '#f5a623', fontFamily: 'Oswald, sans-serif', fontWeight: 700 }}>{leagueTotal}</span>
                         </td>
                       </tr>
                     );
@@ -194,7 +194,7 @@ export function AdminReport({ config, results }: { config: AppConfig; results: R
           <table className="w-full" style={{ borderCollapse: 'collapse', fontFamily: 'Nunito Sans' }}>
             <thead>
               <tr style={{ color: '#4a7d65', fontFamily: 'DM Mono', fontSize: '0.62rem' }}>
-                {['LIGA', 'QUINELA', 'PARTICIPANTE', 'CUOTA', 'ESTADO'].map(h => (
+                {['FOLIO', 'LIGA', 'QUINIELA', 'PARTICIPANTE', 'CUOTA', 'ESTADO'].map(h => (
                   <th key={h} className="text-left px-3 py-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>{h}</th>
                 ))}
               </tr>
@@ -204,6 +204,7 @@ export function AdminReport({ config, results }: { config: AppConfig; results: R
                 const w = who(p);
                 return (
                   <tr key={p.id}>
+                    <td className="px-3 py-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', color: '#d4f226', fontSize: '0.72rem', fontFamily: 'DM Mono', whiteSpace: 'nowrap' }}>{p.id}</td>
                     <td className="px-3 py-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', color: '#9cc4b2', fontSize: '0.74rem' }}>{leagueLabel(p.league)}</td>
                     <td className="px-3 py-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', color: '#e0f0e8', fontSize: '0.78rem' }}>{p.name}</td>
                     <td className="px-3 py-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
