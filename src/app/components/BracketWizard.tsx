@@ -4,9 +4,10 @@ import {
   XCircle, MapPin, Calendar, Lock, AlertCircle,
 } from 'lucide-react';
 import {
-  GROUPS, OFFICIAL_R32, R16_PAIRS, QF_PAIRS, SF_PAIRS,
+  GROUPS, OFFICIAL_R32, R16_PAIRS, QF_PAIRS, SF_PAIRS, FINAL_INFO, BRONZE_INFO,
   getTeam, Prediction, GroupPick, TeamSlot,
 } from '../data/worldcup';
+import { resolveBest3rdAllocation } from '../data/r32ThirdsAllocation';
 
 // ─── Step config ──────────────────────────────────────────────────────────────
 
@@ -56,7 +57,6 @@ export function BracketWizard({
 
   const [groups,         setGroups]        = useState<Record<string, GroupPick>>(basePrediction?.groups ?? {});
   const [elim3rd,        setElim3rd]       = useState<string[]>(basePrediction?.eliminatedThird ?? []);
-  const [r32Thirds,      setR32Thirds]     = useState<Record<string, string>>(basePrediction?.r32Thirds ?? {});
   const [r32,            setR32]           = useState<Record<string, string>>(basePrediction?.r32 ?? {});
   const [r16,            setR16]           = useState<Record<string, string>>(basePrediction?.r16 ?? {});
   const [qf,             setQf]            = useState<Record<string, string>>(basePrediction?.qf ?? {});
@@ -76,6 +76,24 @@ export function BracketWizard({
     allThirds.filter(t => !elim3rd.includes(t.teamId)),
     [allThirds, elim3rd],
   );
+
+  // R32 best-third matchups are NOT a guess. Once the 8 advancing thirds are
+  // known, FIFA's regulations (Annex C, 495 pre-published scenarios) fix exactly
+  // which third plays each "group winner vs best third" match. So we derive the
+  // assignment automatically from the user's group + 3rd-place picks instead of
+  // asking them to slot teams by hand.  matchId → teamId of the assigned third.
+  const r32Thirds = useMemo<Record<string, string>>(() => {
+    const advGroups = advancingThirds.map(t => t.group);
+    if (advGroups.length !== 8) return {};
+    const alloc = resolveBest3rdAllocation(advGroups); // matchId → group letter
+    if (!alloc) return {};
+    const out: Record<string, string> = {};
+    for (const [matchId, groupId] of Object.entries(alloc)) {
+      const teamId = groups[groupId]?.third;
+      if (teamId) out[matchId] = teamId;
+    }
+    return out;
+  }, [advancingThirds, groups]);
 
   // Resolve a slot to a team ID
   function resolveSlot(slot: TeamSlot, matchId: string): string | undefined {
@@ -98,8 +116,12 @@ export function BracketWizard({
   function tercerosComplete() { return elim3rd.length === 4; }
   function r32Complete() {
     return OFFICIAL_R32.every(m => {
-      if (m.away.type === 'best3rd' && !r32Thirds[m.id]) return false;
-      return !!r32[m.id];
+      const homeId = resolveSlot(m.home, m.id);
+      const awayId = resolveSlot(m.away, m.id);
+      if (!homeId || !awayId) return false;
+      // The winner must be one of the two teams actually playing this match,
+      // so changing earlier picks invalidates a now-impossible winner.
+      return r32[m.id] === homeId || r32[m.id] === awayId;
     });
   }
   function r16Complete() { return R16_PAIRS.every(p => r16[p.id]); }
@@ -137,11 +159,12 @@ export function BracketWizard({
       case 'terceros':
         return `Elimina ${4 - elim3rd.length} equipo(s) más`;
       case 'r32': {
-        const unassigned = OFFICIAL_R32.filter(m => m.away.type === 'best3rd' && !r32Thirds[m.id]);
-        if (unassigned.length > 0)
-          return `Asigna el 3° lugar en: ${unassigned.map(m => `P${m.matchNum}`).join(', ')}`;
-        const unpicked = OFFICIAL_R32.filter(m => !r32[m.id]);
-        return `Selecciona el ganador de ${unpicked.length} partido(s)`;
+        const pending = OFFICIAL_R32.filter(m => {
+          const homeId = resolveSlot(m.home, m.id);
+          const awayId = resolveSlot(m.away, m.id);
+          return !homeId || !awayId || (r32[m.id] !== homeId && r32[m.id] !== awayId);
+        });
+        return `Selecciona el ganador de ${pending.length} partido(s)`;
       }
       case 'r16': {
         const n = R16_PAIRS.filter(p => !r16[p.id]).length;
@@ -489,10 +512,6 @@ export function BracketWizard({
   // ─── R32 ─────────────────────────────────────────────────────────────────
 
   function renderR32() {
-    // Used thirds (assigned to other matches)
-    const usedThirds = (matchId: string) =>
-      new Set(Object.entries(r32Thirds).filter(([mid]) => mid !== matchId).map(([, tid]) => tid));
-
     // Group by date
     const byDate = OFFICIAL_R32.reduce<Record<string, typeof OFFICIAL_R32>>((acc, m) => {
       (acc[m.date] ??= []).push(m);
@@ -502,7 +521,11 @@ export function BracketWizard({
     return (
       <div>
         <p style={{ color: '#7eb89a', fontSize: '0.82rem', marginBottom: '14px' }}>
-          Para los partidos con <span style={{ color: '#c084fc' }}>3° mejor</span>, primero asigna qué equipo tercero juega ahí. Luego elige el ganador de cada partido.
+          Los cruces se arman <span style={{ color: '#c084fc' }}>automáticamente</span> con tus picks de grupos
+          y terceros: el equipo <span style={{ color: '#c084fc' }}>3° mejor</span> de cada partido lo define el
+          reglamento oficial de la FIFA, no tú. Solo elige al ganador de cada partido.
+          <br />
+          <span style={{ color: '#4a7d65', fontSize: '0.72rem' }}>Fechas y horarios oficiales (hora del centro de México).</span>
         </p>
 
         <div className="flex flex-col gap-6">
@@ -520,15 +543,14 @@ export function BracketWizard({
                 {matches.map(m => {
                   const homeId = resolveSlot(m.home, m.id);
                   const awayId = resolveSlot(m.away, m.id);
-                  const needsThird = m.away.type === 'best3rd' && !r32Thirds[m.id];
-                  const eligibleGroups = m.away.type === 'best3rd' ? m.away.eligibleGroups : [];
-                  const used = usedThirds(m.id);
-
-                  const eligible = advancingThirds.filter(t => eligibleGroups.includes(t.group));
+                  // For a best-3rd away slot, which group did the auto-assigned third come from.
+                  const awayThirdGroup = m.away.type === 'best3rd'
+                    ? advancingThirds.find(t => t.teamId === awayId)?.group
+                    : undefined;
 
                   return (
                     <div key={m.id} className="rounded-xl overflow-hidden flex flex-col"
-                      style={{ background: '#0b4730', border: needsThird ? '1px solid rgba(192,132,252,0.3)' : r32[m.id] ? '1px solid rgba(245,166,35,0.2)' : '1px solid rgba(255,255,255,0.07)' }}>
+                      style={{ background: '#0b4730', border: r32[m.id] ? '1px solid rgba(245,166,35,0.2)' : '1px solid rgba(255,255,255,0.07)' }}>
 
                       {/* Match header */}
                       <div className="px-3 py-1.5 flex items-center justify-between gap-2"
@@ -538,7 +560,7 @@ export function BracketWizard({
                         </span>
                         <div className="flex items-center gap-2">
                           <span style={{ display: 'flex', alignItems: 'center', gap: '2px', color: '#4a7d65', fontSize: '0.6rem', fontFamily: 'DM Mono' }}>
-                            <Calendar size={8} />{m.date}
+                            <Calendar size={8} />{m.date} · {m.time}
                           </span>
                           <span style={{ display: 'flex', alignItems: 'center', gap: '2px', color: '#4a7d65', fontSize: '0.6rem', fontFamily: 'DM Mono',
                             maxWidth: '110px', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
@@ -572,73 +594,28 @@ export function BracketWizard({
                           VS
                         </div>
 
-                        {/* Away slot */}
-                        {needsThird ? (
-                          <div className="rounded-lg p-2.5" style={{ background: 'rgba(192,132,252,0.06)', border: '1px solid rgba(192,132,252,0.2)' }}>
-                            <div style={{ fontSize: '0.64rem', color: '#c084fc', fontFamily: 'DM Mono', letterSpacing: '0.06em', marginBottom: '6px' }}>
-                              3° MEJOR ({eligibleGroups.join('/')}) — ASIGNA UN EQUIPO:
-                            </div>
-                            {eligible.length === 0 ? (
-                              <div style={{ fontSize: '0.75rem', color: '#5a4060', fontFamily: 'Nunito Sans', fontStyle: 'italic' }}>
-                                Sin equipos elegibles disponibles. Verifica tus picks de terceros.
-                              </div>
-                            ) : (
-                              <div className="flex flex-wrap gap-1.5">
-                                {eligible.map(t => {
-                                  const team = getTeam(t.teamId);
-                                  const taken = used.has(t.teamId);
-                                  return (
-                                    <button key={t.teamId} disabled={taken}
-                                      onClick={() => setR32Thirds(p => ({ ...p, [m.id]: t.teamId }))}
-                                      className="flex items-center gap-1 px-2 py-1 rounded-lg transition-all cursor-pointer"
-                                      style={{
-                                        background: taken ? 'rgba(255,255,255,0.03)' : 'rgba(192,132,252,0.12)',
-                                        border: `1px solid ${taken ? 'rgba(255,255,255,0.05)' : 'rgba(192,132,252,0.3)'}`,
-                                        opacity: taken ? 0.4 : 1,
-                                        cursor: taken ? 'not-allowed' : 'pointer',
-                                      }}>
-                                      <span style={{ fontSize: '0.82rem' }}>{team.flag}</span>
-                                      <span style={{ fontSize: '0.7rem', color: taken ? '#4a7d65' : '#c084fc', fontFamily: 'Nunito Sans', fontWeight: 600 }}>
-                                        {team.shortName}
-                                      </span>
-                                      <span style={{ fontSize: '0.56rem', color: '#5a4060', fontFamily: 'DM Mono' }}>
-                                        3°{t.group}
-                                      </span>
-                                      {taken && <span style={{ fontSize: '0.56rem', color: '#4a7d65', fontFamily: 'DM Mono' }}>✓usado</span>}
-                                    </button>
-                                  );
-                                })}
-                              </div>
-                            )}
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg"
-                            style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)' }}>
-                            {awayId ? (
-                              <>
-                                <span className="text-base">{getTeam(awayId).flag}</span>
-                                <span style={{ fontSize: '0.82rem', fontFamily: 'Nunito Sans', fontWeight: 600, color: '#c0d8cc' }}>
-                                  {getTeam(awayId).name}
-                                </span>
-                                {m.away.type === 'best3rd' && (
-                                  <button onClick={() => setR32Thirds(p => { const n = { ...p }; delete n[m.id]; return n; })}
-                                    className="ml-auto cursor-pointer"
-                                    title="Cambiar equipo"
-                                    style={{ color: '#4a7d65', fontSize: '0.6rem', fontFamily: 'DM Mono' }}>
-                                    cambiar ✕
-                                  </button>
-                                )}
-                              </>
-                            ) : (
-                              <span style={{ fontSize: '0.75rem', color: '#3a6b55', fontFamily: 'DM Mono', fontStyle: 'italic' }}>
-                                {m.away.type === 'pos' ? `${m.away.pos}°${m.away.group}` : '?'} — pendiente
+                        {/* Away slot — positional or auto-assigned best third (read-only) */}
+                        <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg"
+                          style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                          {awayId ? (
+                            <>
+                              <span className="text-base">{getTeam(awayId).flag}</span>
+                              <span style={{ fontSize: '0.82rem', fontFamily: 'Nunito Sans', fontWeight: 600, color: '#c0d8cc' }}>
+                                {getTeam(awayId).name}
                               </span>
-                            )}
-                          </div>
-                        )}
+                              <span style={{ marginLeft: 'auto', fontSize: '0.58rem', color: m.away.type === 'best3rd' ? '#c084fc' : '#3a6b55', fontFamily: 'DM Mono' }}>
+                                {m.away.type === 'pos' ? `${m.away.pos}°${m.away.group}` : `3°${awayThirdGroup ?? ''}`}
+                              </span>
+                            </>
+                          ) : (
+                            <span style={{ fontSize: '0.75rem', color: '#3a6b55', fontFamily: 'DM Mono', fontStyle: 'italic' }}>
+                              {m.away.type === 'pos' ? `${m.away.pos}°Gr.${m.away.group}` : '3° mejor'} — pendiente
+                            </span>
+                          )}
+                        </div>
 
                         {/* Winner picker — only when both teams are known */}
-                        {homeId && awayId && !needsThird && (
+                        {homeId && awayId && (
                           <>
                             <div style={{ height: '1px', background: 'rgba(255,255,255,0.05)', margin: '2px 0' }} />
                             <div style={{ fontSize: '0.62rem', color: '#4a7d65', fontFamily: 'DM Mono', letterSpacing: '0.06em' }}>
@@ -680,28 +657,54 @@ export function BracketWizard({
 
   // ─── R16 ─────────────────────────────────────────────────────────────────
 
-  function renderRound(
-    pairs: { id: string; [k: string]: string }[],
-    getTeamA: (pair: typeof pairs[0]) => string | undefined,
-    getTeamB: (pair: typeof pairs[0]) => string | undefined,
+  function renderRound<P extends { id: string; matchNum: number; date: string; time: string; stadium: string }>(
+    pairs: P[],
+    getTeamA: (pair: P) => string | undefined,
+    getTeamB: (pair: P) => string | undefined,
     picks: Record<string, string>,
     setPicks: Dispatch<SetStateAction<Record<string, string>>>,
-    labelPrefix: string,
   ) {
+    // Group matches by date (same date separators as the R32 step).
+    const byDate = pairs.reduce<Record<string, P[]>>((acc, pair) => {
+      (acc[pair.date] ??= []).push(pair);
+      return acc;
+    }, {});
+
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {pairs.map((pair, i) => {
-          const homeId = getTeamA(pair);
-          const awayId = getTeamB(pair);
-          const winner = picks[pair.id];
-          const both   = homeId && awayId;
-          return (
-            <div key={pair.id} className="rounded-xl overflow-hidden"
-              style={{ background: '#0b4730', border: winner ? '1px solid rgba(245,166,35,0.2)' : '1px solid rgba(255,255,255,0.07)' }}>
-              <div className="px-3 py-1.5" style={{ background: 'rgba(255,255,255,0.03)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                <span style={{ fontFamily: 'DM Mono, monospace', color: '#4a7d65', fontSize: '0.62rem', letterSpacing: '0.06em' }}>
-                  {labelPrefix} {i + 1}
+      <div className="flex flex-col gap-6">
+        {Object.entries(byDate).map(([date, entries]) => (
+          <div key={date}>
+            <div className="flex items-center gap-2 mb-3">
+              <Calendar size={12} style={{ color: '#f5a623' }} />
+              <span style={{ fontFamily: 'Oswald, sans-serif', color: '#f5a623', fontSize: '0.82rem', letterSpacing: '0.08em' }}>
+                {date.toUpperCase()}
+              </span>
+              <div className="flex-1 h-px" style={{ background: 'rgba(245,166,35,0.15)' }} />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {entries.map(pair => {
+                const homeId = getTeamA(pair);
+                const awayId = getTeamB(pair);
+                const winner = picks[pair.id];
+                const both   = homeId && awayId;
+                return (
+                  <div key={pair.id} className="rounded-xl overflow-hidden"
+                    style={{ background: '#0b4730', border: winner ? '1px solid rgba(245,166,35,0.2)' : '1px solid rgba(255,255,255,0.07)' }}>
+              <div className="px-3 py-1.5 flex items-center justify-between gap-2"
+                style={{ background: 'rgba(255,255,255,0.03)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                <span style={{ fontFamily: 'Oswald, sans-serif', color: '#f5a623', fontSize: '0.72rem', letterSpacing: '0.1em' }}>
+                  P{pair.matchNum}
                 </span>
+                <div className="flex items-center gap-2">
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '2px', color: '#4a7d65', fontSize: '0.6rem', fontFamily: 'DM Mono' }}>
+                    <Calendar size={8} />{pair.date} · {pair.time}
+                  </span>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '2px', color: '#4a7d65', fontSize: '0.6rem', fontFamily: 'DM Mono',
+                    maxWidth: '120px', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+                    <MapPin size={8} />{pair.stadium}
+                  </span>
+                </div>
               </div>
               <div className="p-2.5 flex flex-col gap-1.5">
                 {both ? (
@@ -729,10 +732,13 @@ export function BracketWizard({
                     Completa la fase anterior
                   </div>
                 )}
-              </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-          );
-        })}
+          </div>
+        ))}
       </div>
     );
   }
@@ -745,7 +751,7 @@ export function BracketWizard({
           R16_PAIRS,
           p => r32[p.r32a],
           p => r32[p.r32b],
-          r16, setR16, 'OCTAVO',
+          r16, setR16,
         )}
       </div>
     );
@@ -759,7 +765,7 @@ export function BracketWizard({
           QF_PAIRS,
           p => r16[p.r16a],
           p => r16[p.r16b],
-          qf, setQf, 'CUARTO',
+          qf, setQf,
         )}
       </div>
     );
@@ -773,7 +779,7 @@ export function BracketWizard({
           SF_PAIRS,
           p => qf[p.qfa],
           p => qf[p.qfb],
-          sf, setSf, 'SEMIFINAL',
+          sf, setSf,
         )}
       </div>
     );
@@ -791,8 +797,10 @@ export function BracketWizard({
       <div>
         <div className="rounded-xl p-4 mb-4 text-center" style={{ background: 'rgba(245,166,35,0.07)', border: '1px solid rgba(245,166,35,0.2)' }}>
           <Trophy size={28} style={{ color: '#f5a623', margin: '0 auto 6px' }} />
-          <div style={{ fontFamily: 'Oswald, sans-serif', color: '#f5a623', fontSize: '1.1rem', letterSpacing: '0.08em' }}>GRAN FINAL</div>
-          <p style={{ color: '#4a7d65', fontSize: '0.7rem', fontFamily: 'DM Mono', marginTop: '2px' }}>19 jul 2026 · MetLife Stadium, Nueva York</p>
+          <div style={{ fontFamily: 'Oswald, sans-serif', color: '#f5a623', fontSize: '1.1rem', letterSpacing: '0.08em' }}>GRAN FINAL · P{FINAL_INFO.matchNum}</div>
+          <p style={{ color: '#4a7d65', fontSize: '0.7rem', fontFamily: 'DM Mono', marginTop: '2px' }}>
+            {FINAL_INFO.date} 2026 · {FINAL_INFO.time} h · {FINAL_INFO.stadium}
+          </p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
@@ -816,7 +824,8 @@ export function BracketWizard({
             </div>
           </div>
           <div>
-            <div style={{ fontFamily: 'Oswald, sans-serif', color: '#9cc4b2', fontSize: '0.78rem', letterSpacing: '0.08em', marginBottom: '8px' }}>🥉 3ER Y 4TO LUGAR</div>
+            <div style={{ fontFamily: 'Oswald, sans-serif', color: '#9cc4b2', fontSize: '0.78rem', letterSpacing: '0.08em', marginBottom: '2px' }}>🥉 3ER Y 4TO LUGAR · P{BRONZE_INFO.matchNum}</div>
+            <div style={{ color: '#4a7d65', fontSize: '0.62rem', fontFamily: 'DM Mono', marginBottom: '8px' }}>{BRONZE_INFO.date} 2026 · {BRONZE_INFO.time} h · {BRONZE_INFO.stadium}</div>
             <div className="grid grid-cols-1 gap-1.5">
               {[sf1Loser, sf2Loser].filter(Boolean).map(tid => {
                 const t = getTeam(tid!);

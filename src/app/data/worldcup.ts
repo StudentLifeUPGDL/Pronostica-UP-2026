@@ -208,96 +208,100 @@ export interface OfficialR32Match {
   id: string;
   matchNum: number;
   date: string;
+  time: string;     // kickoff in Ciudad de México time (UTC-6)
   stadium: string;
   home: TeamSlot;
   away: TeamSlot;
 }
 
+// Dates, venues and kickoff times are from FIFA's official match schedule.
+// FIFA publishes all times in U.S. Eastern Time; here they are shown in Ciudad
+// de México time (UTC-6, i.e. ET − 2h during the tournament in late Jun/Jul).
 export const OFFICIAL_R32: OfficialR32Match[] = [
   // Jun 28
   {
-    id: 'p73', matchNum: 73, date: '28 jun', stadium: 'Los Ángeles',
+    id: 'p73', matchNum: 73, date: '28 jun', time: '13:00', stadium: 'Los Ángeles',
     home: { type: 'pos', group: 'A', pos: 2 },
     away: { type: 'pos', group: 'B', pos: 2 },
   },
   // Jun 29
   {
-    id: 'p74', matchNum: 74, date: '29 jun', stadium: 'Boston',
+    id: 'p74', matchNum: 74, date: '29 jun', time: '14:30', stadium: 'Boston',
     home: { type: 'pos', group: 'E', pos: 1 },
     away: { type: 'best3rd', eligibleGroups: ['A','B','C','D','F'] },
   },
   {
-    id: 'p75', matchNum: 75, date: '29 jun', stadium: 'Monterrey',
+    id: 'p75', matchNum: 75, date: '29 jun', time: '19:00', stadium: 'Monterrey',
     home: { type: 'pos', group: 'F', pos: 1 },
     away: { type: 'pos', group: 'C', pos: 2 },
   },
   {
     // Note: original data had "1º E" but E is already in p74 — corrected to 1º C
-    id: 'p76', matchNum: 76, date: '29 jun', stadium: 'Houston',
+    id: 'p76', matchNum: 76, date: '29 jun', time: '11:00', stadium: 'Houston',
     home: { type: 'pos', group: 'C', pos: 1 },
     away: { type: 'pos', group: 'F', pos: 2 },
   },
   // Jun 30
   {
-    id: 'p77', matchNum: 77, date: '30 jun', stadium: 'Nueva York / Nueva Jersey',
+    id: 'p77', matchNum: 77, date: '30 jun', time: '15:00', stadium: 'Nueva York / Nueva Jersey',
     home: { type: 'pos', group: 'I', pos: 1 },
     away: { type: 'best3rd', eligibleGroups: ['C','D','F','G','H'] },
   },
   {
-    id: 'p78', matchNum: 78, date: '30 jun', stadium: 'Dallas',
+    id: 'p78', matchNum: 78, date: '30 jun', time: '11:00', stadium: 'Dallas',
     home: { type: 'pos', group: 'E', pos: 2 },
     away: { type: 'pos', group: 'I', pos: 2 },
   },
   {
-    id: 'p79', matchNum: 79, date: '30 jun', stadium: 'Azteca — Ciudad de México',
+    id: 'p79', matchNum: 79, date: '30 jun', time: '19:00', stadium: 'Azteca — Ciudad de México',
     home: { type: 'pos', group: 'A', pos: 1 },
     away: { type: 'best3rd', eligibleGroups: ['C','E','F','H','I'] },
   },
   // Jul 1
   {
-    id: 'p80', matchNum: 80, date: '1 jul', stadium: 'Atlanta',
+    id: 'p80', matchNum: 80, date: '1 jul', time: '10:00', stadium: 'Atlanta',
     home: { type: 'pos', group: 'L', pos: 1 },
     away: { type: 'best3rd', eligibleGroups: ['E','H','I','J','K'] },
   },
   {
-    id: 'p81', matchNum: 81, date: '1 jul', stadium: 'Bahía de San Francisco',
+    id: 'p81', matchNum: 81, date: '1 jul', time: '18:00', stadium: 'Bahía de San Francisco',
     home: { type: 'pos', group: 'D', pos: 1 },
     away: { type: 'best3rd', eligibleGroups: ['B','E','F','I','J'] },
   },
   {
-    id: 'p82', matchNum: 82, date: '1 jul', stadium: 'Seattle',
+    id: 'p82', matchNum: 82, date: '1 jul', time: '14:00', stadium: 'Seattle',
     home: { type: 'pos', group: 'G', pos: 1 },
     away: { type: 'best3rd', eligibleGroups: ['A','E','H','I','J'] },
   },
   // Jul 2
   {
-    id: 'p83', matchNum: 83, date: '2 jul', stadium: 'Toronto',
+    id: 'p83', matchNum: 83, date: '2 jul', time: '17:00', stadium: 'Toronto',
     home: { type: 'pos', group: 'K', pos: 2 },
     away: { type: 'pos', group: 'L', pos: 2 },
   },
   {
-    id: 'p84', matchNum: 84, date: '2 jul', stadium: 'Los Ángeles',
+    id: 'p84', matchNum: 84, date: '2 jul', time: '13:00', stadium: 'Los Ángeles',
     home: { type: 'pos', group: 'H', pos: 1 },
     away: { type: 'pos', group: 'J', pos: 2 },
   },
   {
-    id: 'p85', matchNum: 85, date: '2 jul', stadium: 'BC Place Vancouver',
+    id: 'p85', matchNum: 85, date: '2 jul', time: '21:00', stadium: 'BC Place Vancouver',
     home: { type: 'pos', group: 'B', pos: 1 },
     away: { type: 'best3rd', eligibleGroups: ['E','F','G','I','J'] },
   },
   // Jul 3
   {
-    id: 'p86', matchNum: 86, date: '3 jul', stadium: 'Miami',
+    id: 'p86', matchNum: 86, date: '3 jul', time: '16:00', stadium: 'Miami',
     home: { type: 'pos', group: 'J', pos: 1 },
     away: { type: 'pos', group: 'H', pos: 2 },
   },
   {
-    id: 'p87', matchNum: 87, date: '3 jul', stadium: 'Kansas City',
+    id: 'p87', matchNum: 87, date: '3 jul', time: '19:30', stadium: 'Kansas City',
     home: { type: 'pos', group: 'K', pos: 1 },
     away: { type: 'best3rd', eligibleGroups: ['D','E','I','J','L'] },
   },
   {
-    id: 'p88', matchNum: 88, date: '3 jul', stadium: 'Dallas',
+    id: 'p88', matchNum: 88, date: '3 jul', time: '12:00', stadium: 'Dallas',
     home: { type: 'pos', group: 'D', pos: 2 },
     away: { type: 'pos', group: 'G', pos: 2 },
   },
@@ -308,30 +312,51 @@ export const BEST3RD_MATCH_IDS = OFFICIAL_R32
   .filter(m => m.away.type === 'best3rd')
   .map(m => m.id);
 
-// ─── Simplified knockout brackets (built from R32 results) ────────────────────
+// ─── Knockout brackets (official FIFA bracket, match numbers 89–104) ───────────
+// The pairings below follow FIFA's published bracket exactly — they are NOT a
+// "two consecutive matches feed the next" simplification. Times are kickoff in
+// Ciudad de México (UTC-6); FIFA publishes them in U.S. Eastern Time (ET = CDMX + 2h).
 
-export const R16_PAIRS = [
-  { id: 'r16-1', r32a: 'p73', r32b: 'p74' },
-  { id: 'r16-2', r32a: 'p75', r32b: 'p76' },
-  { id: 'r16-3', r32a: 'p77', r32b: 'p78' },
-  { id: 'r16-4', r32a: 'p79', r32b: 'p80' },
-  { id: 'r16-5', r32a: 'p81', r32b: 'p82' },
-  { id: 'r16-6', r32a: 'p83', r32b: 'p84' },
-  { id: 'r16-7', r32a: 'p85', r32b: 'p86' },
-  { id: 'r16-8', r32a: 'p87', r32b: 'p88' },
+export interface R16Pair {
+  id: string; matchNum: number; date: string; time: string; stadium: string;
+  r32a: string; r32b: string;  // the two R32 matches whose winners meet here
+}
+export const R16_PAIRS: R16Pair[] = [
+  { id: 'r16-1', matchNum: 89, date: '4 jul', time: '15:00', stadium: 'Filadelfia',                 r32a: 'p74', r32b: 'p77' },
+  { id: 'r16-2', matchNum: 90, date: '4 jul', time: '11:00', stadium: 'Houston',                    r32a: 'p73', r32b: 'p75' },
+  { id: 'r16-3', matchNum: 91, date: '5 jul', time: '14:00', stadium: 'Nueva York / Nueva Jersey',  r32a: 'p76', r32b: 'p78' },
+  { id: 'r16-4', matchNum: 92, date: '5 jul', time: '18:00', stadium: 'Azteca — Ciudad de México',  r32a: 'p79', r32b: 'p80' },
+  { id: 'r16-5', matchNum: 93, date: '6 jul', time: '13:00', stadium: 'Dallas',                     r32a: 'p83', r32b: 'p84' },
+  { id: 'r16-6', matchNum: 94, date: '6 jul', time: '18:00', stadium: 'Seattle',                    r32a: 'p81', r32b: 'p82' },
+  { id: 'r16-7', matchNum: 95, date: '7 jul', time: '10:00', stadium: 'Atlanta',                    r32a: 'p86', r32b: 'p88' },
+  { id: 'r16-8', matchNum: 96, date: '7 jul', time: '14:00', stadium: 'BC Place Vancouver',         r32a: 'p85', r32b: 'p87' },
 ];
 
-export const QF_PAIRS = [
-  { id: 'qf-1', r16a: 'r16-1', r16b: 'r16-2' },
-  { id: 'qf-2', r16a: 'r16-3', r16b: 'r16-4' },
-  { id: 'qf-3', r16a: 'r16-5', r16b: 'r16-6' },
-  { id: 'qf-4', r16a: 'r16-7', r16b: 'r16-8' },
+export interface QFPair {
+  id: string; matchNum: number; date: string; time: string; stadium: string;
+  r16a: string; r16b: string;
+}
+export const QF_PAIRS: QFPair[] = [
+  { id: 'qf-1', matchNum: 97,  date: '9 jul',  time: '14:00', stadium: 'Boston',      r16a: 'r16-1', r16b: 'r16-2' },
+  { id: 'qf-2', matchNum: 98,  date: '10 jul', time: '13:00', stadium: 'Los Ángeles', r16a: 'r16-5', r16b: 'r16-6' },
+  { id: 'qf-3', matchNum: 99,  date: '11 jul', time: '15:00', stadium: 'Miami',       r16a: 'r16-3', r16b: 'r16-4' },
+  { id: 'qf-4', matchNum: 100, date: '11 jul', time: '19:00', stadium: 'Kansas City', r16a: 'r16-7', r16b: 'r16-8' },
 ];
 
-export const SF_PAIRS = [
-  { id: 'sf-1', qfa: 'qf-1', qfb: 'qf-2' },
-  { id: 'sf-2', qfa: 'qf-3', qfb: 'qf-4' },
+export interface SFPair {
+  id: string; matchNum: number; date: string; time: string; stadium: string;
+  qfa: string; qfb: string;
+}
+export const SF_PAIRS: SFPair[] = [
+  { id: 'sf-1', matchNum: 101, date: '14 jul', time: '13:00', stadium: 'Dallas',  qfa: 'qf-1', qfb: 'qf-2' },
+  { id: 'sf-2', matchNum: 102, date: '15 jul', time: '13:00', stadium: 'Atlanta', qfa: 'qf-3', qfb: 'qf-4' },
 ];
+
+export interface KnockoutInfo { matchNum: number; date: string; time: string; stadium: string; }
+// Third-place match: losers of sf-1 and sf-2.
+export const BRONZE_INFO: KnockoutInfo = { matchNum: 103, date: '18 jul', time: '15:00', stadium: 'Miami' };
+// Final: winners of sf-1 and sf-2.
+export const FINAL_INFO: KnockoutInfo = { matchNum: 104, date: '19 jul', time: '13:00', stadium: 'MetLife — Nueva York / Nueva Jersey' };
 
 // ─── Match schedule ───────────────────────────────────────────────────────────
 
