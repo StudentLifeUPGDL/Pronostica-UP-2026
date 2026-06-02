@@ -218,7 +218,7 @@ export default function App() {
                 config={config}
               />
             )}
-            {currentPage === 'results' && <ResultsPage />}
+            {currentPage === 'results' && <ResultsPage results={results} />}
             {(currentPage === 'bracket' || currentPage === 'my-predictions') && (
               <MyPredictions
                 predictions={predictions}

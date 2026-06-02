@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Users, Trophy, Star, Calendar, Wallet, Wrench } from 'lucide-react';
-import { UPCOMING_MATCHES, GROUPS, getTeam, type Prediction, type Results, type AppConfig } from '../data/worldcup';
+import { FULL_SCHEDULE, GROUPS, getTeam, type Prediction, type Results, type AppConfig } from '../data/worldcup';
 import { computeScore } from '../../lib/scoring';
 import { leagueLabel } from '../../lib/payment';
 import type { Page } from '../App';
@@ -69,8 +69,8 @@ export function HomePage({ userName, onNavigate, predictions, results, config }:
     { name: 'UEFA', teams: 16, color: '#4a9eff' },
     { name: 'CONMEBOL', teams: 6, color: '#f5a623' },
     { name: 'CONCACAF', teams: 6, color: '#d4f226' },
-    { name: 'CAF', teams: 9, color: '#ff6b6b' },
-    { name: 'AFC', teams: 8, color: '#c084fc' },
+    { name: 'CAF', teams: 10, color: '#ff6b6b' },
+    { name: 'AFC', teams: 9, color: '#c084fc' },
     { name: 'OFC', teams: 1, color: '#4ade80' },
   ];
 
@@ -131,9 +131,9 @@ export function HomePage({ userName, onNavigate, predictions, results, config }:
             <button onClick={() => onNavigate('results')} style={{ color: '#7eb89a', fontSize: '0.72rem', fontFamily: 'DM Mono, monospace' }}>ver todos →</button>
           </div>
           <div>
-            {UPCOMING_MATCHES.map(match => {
-              const home = getTeam(match.homeTeamId);
-              const away = getTeam(match.awayTeamId);
+            {FULL_SCHEDULE.slice(0, 8).map(match => {
+              const home = match.homeTeamId ? getTeam(match.homeTeamId) : null;
+              const away = match.awayTeamId ? getTeam(match.awayTeamId) : null;
               return (
                 <div key={match.id} className="px-5 py-3 flex items-center gap-3 hover:bg-white/5 transition-colors" style={{ borderTop: '1px solid rgba(255,255,255,0.04)' }}>
                   <div className="text-center flex-shrink-0" style={{ minWidth: '56px' }}>
@@ -142,16 +142,16 @@ export function HomePage({ userName, onNavigate, predictions, results, config }:
                   </div>
                   <div className="flex-1 flex items-center justify-between gap-2">
                     <div className="flex items-center gap-1.5 min-w-0">
-                      <span className="text-base">{home.flag}</span>
-                      <span style={{ color: '#e0f0e8', fontSize: '0.82rem' }} className="truncate">{home.shortName}</span>
+                      <span className="text-base">{home ? home.flag : '⏳'}</span>
+                      <span style={{ color: '#e0f0e8', fontSize: '0.82rem' }} className="truncate">{home ? home.shortName : match.homeLabel}</span>
                     </div>
                     <div className="flex-shrink-0 px-2 py-0.5 rounded" style={{ background: 'rgba(255,255,255,0.08)', fontFamily: 'DM Mono, monospace', color: '#9cc4b2', fontSize: '0.72rem' }}>VS</div>
                     <div className="flex items-center gap-1.5 min-w-0 flex-row-reverse">
-                      <span className="text-base">{away.flag}</span>
-                      <span style={{ color: '#e0f0e8', fontSize: '0.82rem' }} className="truncate">{away.shortName}</span>
+                      <span className="text-base">{away ? away.flag : '⏳'}</span>
+                      <span style={{ color: '#e0f0e8', fontSize: '0.82rem' }} className="truncate">{away ? away.shortName : match.awayLabel}</span>
                     </div>
                   </div>
-                  <span className="px-2 py-0.5 rounded text-xs flex-shrink-0" style={{ background: 'rgba(13,96,64,0.8)', color: '#7eb89a', fontSize: '0.65rem', fontFamily: 'DM Mono, monospace' }}>Gr. {match.group}</span>
+                  <span className="px-2 py-0.5 rounded text-xs flex-shrink-0" style={{ background: 'rgba(13,96,64,0.8)', color: '#7eb89a', fontSize: '0.65rem', fontFamily: 'DM Mono, monospace' }}>{match.group ? `Gr. ${match.group}` : `P${match.matchNum}`}</span>
                 </div>
               );
             })}
