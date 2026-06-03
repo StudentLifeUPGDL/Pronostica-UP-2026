@@ -40,6 +40,13 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Public, aggregate-only stats (paid counts → live bote). No personal data.
+    // World-readable so the home page can show the growing prize; admin-only write.
+    match /stats/{doc} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
     match /users/{uid} {
       allow read:   if isAdmin() || (isSignedIn() && request.auth.uid == uid);
       allow create: if isSignedIn() && request.auth.uid == uid;

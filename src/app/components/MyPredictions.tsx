@@ -22,7 +22,7 @@ interface MyPredictionsProps {
 const STATUS_STYLE: Record<PaymentStatus, { label: string; color: string; bg: string }> = {
   pending: { label: 'PAGO PENDIENTE', color: '#f5a623', bg: 'rgba(245,166,35,0.12)' },
   paid: { label: 'PAGADO', color: '#4ade80', bg: 'rgba(74,222,128,0.12)' },
-  void: { label: 'ANULADA', color: '#e63946', bg: 'rgba(230,57,70,0.12)' },
+  void: { label: 'ANULADO', color: '#e63946', bg: 'rgba(230,57,70,0.12)' },
 };
 
 function StatusBadge({ status }: { status: PaymentStatus }) {
@@ -146,7 +146,7 @@ function SoloCard({ entry, results, email, joinOpen, onEdit, onDelete }: {
           </>
         ) : (
           <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg" style={{ color: '#4a7d65', fontFamily: 'Oswald, sans-serif', fontSize: '0.72rem', letterSpacing: '0.05em' }}>
-            <Lock size={11} /> BLOQUEADA
+            <Lock size={11} /> BLOQUEADO
           </span>
         )}
       </div>
@@ -224,7 +224,7 @@ function MainCard({ main, results, email, lockPassed, onEdit, onDelete }: {
         <div className="flex-1" />
         {lockPassed ? (
           <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg" style={{ color: '#4a7d65', fontFamily: 'Oswald, sans-serif', fontSize: '0.72rem', letterSpacing: '0.05em' }}>
-            <Lock size={11} /> BLOQUEADA
+            <Lock size={11} /> BLOQUEADO
           </span>
         ) : (
           <>
@@ -259,7 +259,7 @@ export function MyPredictions({
         <div>
           <h1 style={{ fontFamily: 'Oswald, sans-serif', color: '#f5a623', fontSize: '1.8rem', fontWeight: 700, letterSpacing: '0.04em' }}>MIS PRONÓSTICOS</h1>
           <p style={{ color: '#7eb89a', fontSize: '0.82rem', marginTop: '4px' }}>
-            {mains.length} quiniela{mains.length !== 1 ? 's' : ''} · {pendingCount}/{maxPending} con pago pendiente
+            {mains.length} pronóstico{mains.length !== 1 ? 's' : ''} · {pendingCount}/{maxPending} con pago pendiente
           </p>
         </div>
         <button
@@ -268,17 +268,17 @@ export function MyPredictions({
           title={lockPassed ? 'El torneo ya inició' : pendingCount >= maxPending ? `Máximo ${maxPending} pendientes` : ''}
           className="flex items-center gap-2 px-4 py-2.5 rounded-xl cursor-pointer transition-all disabled:opacity-40 disabled:cursor-not-allowed"
           style={{ background: '#f5a623', color: '#062b1a', fontFamily: 'Oswald, sans-serif', fontWeight: 700, fontSize: '0.85rem', letterSpacing: '0.05em' }}>
-          <Plus size={16} /> NUEVA QUINIELA
+          <Plus size={16} /> NUEVO PRONÓSTICO
         </button>
       </div>
 
       {mains.length === 0 ? (
         <div className="rounded-2xl p-12 text-center" style={{ background: '#0d5035', border: '2px dashed rgba(245,166,35,0.2)' }}>
           <Trophy size={48} style={{ color: '#2a5a3a', margin: '0 auto 16px' }} />
-          <div style={{ fontFamily: 'Oswald, sans-serif', color: '#4a7d65', fontSize: '1.2rem', letterSpacing: '0.05em', marginBottom: '8px' }}>AÚN NO TIENES QUINIELAS</div>
+          <div style={{ fontFamily: 'Oswald, sans-serif', color: '#4a7d65', fontSize: '1.2rem', letterSpacing: '0.05em', marginBottom: '8px' }}>AÚN NO TIENES PRONÓSTICOS</div>
           <p style={{ color: '#3a6b55', fontSize: '0.85rem', marginBottom: '20px' }}>Crea tu primer pronóstico antes de que inicie el Mundial.</p>
           <button onClick={onNew} disabled={newDisabled} className="inline-flex items-center gap-2 px-6 py-3 rounded-xl cursor-pointer disabled:opacity-40" style={{ background: '#f5a623', color: '#062b1a', fontFamily: 'Oswald, sans-serif', fontWeight: 700, fontSize: '0.9rem' }}>
-            <Plus size={18} /> CREAR PRIMERA QUINIELA
+            <Plus size={18} /> CREAR PRIMER PRONÓSTICO
           </button>
         </div>
       ) : (
@@ -304,7 +304,7 @@ export function MyPredictions({
             <span style={{ fontFamily: 'Oswald, sans-serif', color: '#f5a623', fontSize: '0.85rem', letterSpacing: '0.06em' }}>CÓMO FUNCIONA</span>
           </div>
           <p style={{ color: '#7eb89a', fontSize: '0.8rem' }}>
-            Tus puntos se actualizan con los resultados reales. Además de la quiniela principal, puedes
+            Tus puntos se actualizan con los resultados reales. Además del pronóstico principal, puedes
             entrar a las <strong style={{ color: '#c084fc' }}>Ligas Aparte</strong> (R32 y R16): torneos
             independientes de la eliminatoria, cada uno con su propio premio. La clasificación general es
             privada del organizador.
@@ -319,7 +319,7 @@ export function MyPredictions({
           <h2 style={{ fontFamily: 'Oswald, sans-serif', color: '#c084fc', fontSize: '1.15rem', fontWeight: 700, letterSpacing: '0.04em' }}>LIGAS APARTE</h2>
         </div>
         <p style={{ color: '#7eb89a', fontSize: '0.8rem', marginBottom: '14px' }}>
-          Compite solo en la eliminatoria, <strong style={{ color: '#c084fc' }}>sin necesidad de la quiniela principal</strong>. Eliges una
+          Compite solo en la eliminatoria, <strong style={{ color: '#c084fc' }}>sin necesidad del pronóstico principal</strong>. Eliges una
           combinación que arma tu cuadro; los equipos se actualizan solos conforme llegan los resultados, y
           puedes ajustar hasta antes del primer partido de la ronda.
         </p>

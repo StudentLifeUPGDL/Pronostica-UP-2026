@@ -103,7 +103,7 @@ export function AdminResultsEntry({ config, onSaved }: { config: AppConfig; onSa
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {([
-            ['lockDate', 'Cierre quiniela principal (kickoff)'],
+            ['lockDate', 'Cierre de pronósticos (kickoff)'],
             ['paymentDeadline', 'Fecha límite de pago (anula pendientes)'],
             ['r32StartDate', 'Inicio R32 (cierra Liga R32)'],
             ['r16StartDate', 'Inicio R16 (cierra Liga R16)'],
@@ -126,7 +126,7 @@ export function AdminResultsEntry({ config, onSaved }: { config: AppConfig; onSa
             </label>
           ))}
           <label className="flex flex-col gap-1">
-            <span style={labelStyle}>% del bote que se reparte (0–1)</span>
+            <span style={labelStyle}>% del bote publicado al ganador (Pronostica Pantera, 0–1)</span>
             <input type="number" min={0} max={1} step={0.05} value={cfg.payoutPercent}
               onChange={e => setCfg({ ...cfg, payoutPercent: Number(e.target.value) })} style={inputStyle} />
           </label>
@@ -136,7 +136,7 @@ export function AdminResultsEntry({ config, onSaved }: { config: AppConfig; onSa
               onChange={e => setCfg({ ...cfg, payoutRoundTo: Number(e.target.value) })} style={inputStyle} />
           </label>
           <label className="flex flex-col gap-1">
-            <span style={labelStyle}>Máx. quinielas con pago pendiente</span>
+            <span style={labelStyle}>Máx. pronósticos con pago pendiente</span>
             <input type="number" min={1} value={cfg.maxPendingPerUser}
               onChange={e => setCfg({ ...cfg, maxPendingPerUser: Number(e.target.value) })} style={inputStyle} />
           </label>
@@ -148,29 +148,33 @@ export function AdminResultsEntry({ config, onSaved }: { config: AppConfig; onSa
 
         {/* ── Rifa de Países ── */}
         <div className="mt-5 pt-4" style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
-          <div style={{ ...labelStyle, color: '#f5a623', marginBottom: '10px' }}>RIFA DE PAÍSES (MODO TRADICIONAL)</div>
+          <div style={{ ...labelStyle, color: '#f5a623', marginBottom: '10px' }}>QUINIELA (MODO TRADICIONAL)</div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <label className="flex items-center gap-2 sm:col-span-2">
               <input type="checkbox" checked={cfg.rifaEnabled} onChange={e => setCfg({ ...cfg, rifaEnabled: e.target.checked })} style={{ width: 16, height: 16, accentColor: '#f5a623' }} />
-              <span style={labelStyle}>Habilitar el modo Rifa de Países</span>
+              <span style={labelStyle}>Habilitar el modo Quiniela</span>
             </label>
             <label className="flex flex-col gap-1">
               <span style={labelStyle}>Precio por boleto ({cfg.currency})</span>
               <input type="number" min={0} value={cfg.rifaFee}
                 onChange={e => setCfg({ ...cfg, rifaFee: Number(e.target.value) })} style={inputStyle} />
             </label>
-            <div className="flex flex-col gap-1">
-              <span style={labelStyle}>Reparto del bote (campeón / subcampeón / 3°, 0–1)</span>
-              <div className="flex gap-2">
-                {([0, 1, 2] as const).map(i => (
-                  <input key={i} type="number" min={0} max={1} step={0.05}
-                    value={cfg.rifaPayoutSplit[i] ?? 0}
-                    onChange={e => {
-                      const next = [...cfg.rifaPayoutSplit];
-                      next[i] = Number(e.target.value);
-                      setCfg({ ...cfg, rifaPayoutSplit: next });
-                    }}
-                    style={inputStyle} />
+            <div className="sm:col-span-2">
+              <span style={labelStyle}>Premios fijos por lugar ({cfg.currency}) — según qué tan lejos llegue el país</span>
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 mt-1">
+                {([
+                  ['first', '1° Campeón'],
+                  ['second', '2° Subcampeón'],
+                  ['third', '3° 3er lugar'],
+                  ['fourth', '4° 4° lugar'],
+                  ['consolation', 'Vale 5°–16°'],
+                ] as const).map(([key, label]) => (
+                  <label key={key} className="flex flex-col gap-1">
+                    <span style={{ ...labelStyle, fontSize: '0.62rem' }}>{label}</span>
+                    <input type="number" min={0} value={cfg.rifaPrizes[key]}
+                      onChange={e => setCfg({ ...cfg, rifaPrizes: { ...cfg.rifaPrizes, [key]: Number(e.target.value) } })}
+                      style={inputStyle} />
+                  </label>
                 ))}
               </div>
             </div>

@@ -8,6 +8,7 @@ import { leagueLabel } from '../../lib/payment';
 import {
   fetchAllPredictions, fetchAllUsers, setPaymentStatus, applyVoids, type UserDoc,
 } from '../../lib/predictions';
+import { recomputePublicStats } from '../../lib/stats';
 
 const LEAGUES: { key: League; label: string }[] = [
   { key: 'main', label: 'Liga Principal' },
@@ -66,15 +67,25 @@ export function AdminReport({ config, results }: { config: AppConfig; results: R
     setBusy(true); setNote('');
     try {
       const n = await applyVoids();
-      setNote(n > 0 ? `${n} quiniela(s) pendiente(s) anuladas por vencimiento.` : 'No hay pendientes vencidas que anular.');
+      setNote(n > 0 ? `${n} pronóstico(s) pendiente(s) anulado(s) por vencimiento.` : 'No hay pendientes vencidas que anular.');
       await load();
     } catch {
       setError('No se pudieron aplicar las anulaciones.');
     } finally { setBusy(false); }
   }
 
+  async function runPublishStats() {
+    setBusy(true); setNote('');
+    try {
+      await recomputePublicStats();
+      setNote('Bote público actualizado. Ya se ve en el inicio de los participantes.');
+    } catch {
+      setError('No se pudo publicar el bote público.');
+    } finally { setBusy(false); }
+  }
+
   function exportCsv() {
-    const rows = [['Folio', 'Liga', 'Quiniela', 'Nombre', 'Email', 'Codigo', 'EstadoPago', 'Puntos', 'Campeon', 'Subcampeon', 'Tercero', 'Creado']];
+    const rows = [['Folio', 'Liga', 'Pronostico', 'Nombre', 'Email', 'Codigo', 'EstadoPago', 'Puntos', 'Campeon', 'Subcampeon', 'Tercero', 'Creado']];
     for (const p of preds) {
       const w = who(p);
       const pts = rankPredictions([p], results)[0]?.leagueTotal ?? 0;
@@ -88,7 +99,7 @@ export function AdminReport({ config, results }: { config: AppConfig; results: R
     const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url; a.download = 'quiniela-reporte.csv'; a.click();
+    a.href = url; a.download = 'pronosticos-reporte.csv'; a.click();
     URL.revokeObjectURL(url);
   }
 
@@ -112,6 +123,9 @@ export function AdminReport({ config, results }: { config: AppConfig; results: R
         <div className="flex gap-2">
           <button onClick={load} disabled={busy} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg cursor-pointer disabled:opacity-50" style={{ background: '#0d5035', color: '#9cc4b2', border: '1px solid rgba(255,255,255,0.1)', fontFamily: 'Oswald, sans-serif', fontSize: '0.76rem' }}>
             <RefreshCw size={13} /> ACTUALIZAR
+          </button>
+          <button onClick={runPublishStats} disabled={busy} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg cursor-pointer disabled:opacity-50" style={{ background: 'rgba(245,166,35,0.12)', color: '#f5a623', border: '1px solid rgba(245,166,35,0.3)', fontFamily: 'Oswald, sans-serif', fontSize: '0.76rem' }}>
+            <Trophy size={13} /> PUBLICAR BOTE
           </button>
           <button onClick={exportCsv} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg cursor-pointer" style={{ background: 'rgba(212,242,38,0.12)', color: '#d4f226', border: '1px solid rgba(212,242,38,0.3)', fontFamily: 'Oswald, sans-serif', fontSize: '0.76rem' }}>
             <Download size={13} /> EXPORTAR CSV
@@ -138,13 +152,13 @@ export function AdminReport({ config, results }: { config: AppConfig; results: R
             </div>
           </div>
           {s.ranked.length === 0 ? (
-            <div className="px-5 py-6 text-center" style={{ color: '#4a7d65', fontSize: '0.82rem' }}>Sin quinielas pagadas en esta liga.</div>
+            <div className="px-5 py-6 text-center" style={{ color: '#4a7d65', fontSize: '0.82rem' }}>Sin pronósticos pagados en esta liga.</div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full" style={{ borderCollapse: 'collapse', fontFamily: 'Nunito Sans' }}>
                 <thead>
                   <tr style={{ color: '#4a7d65', fontFamily: 'DM Mono', fontSize: '0.62rem', letterSpacing: '0.05em' }}>
-                    {['#', 'PARTICIPANTE', 'QUINIELA', 'CAMP', 'SUB', '3°', 'PTS'].map(h => (
+                    {['#', 'PARTICIPANTE', 'PRONÓSTICO', 'CAMP', 'SUB', '3°', 'PTS'].map(h => (
                       <th key={h} className="text-left px-3 py-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>{h}</th>
                     ))}
                   </tr>
@@ -194,7 +208,7 @@ export function AdminReport({ config, results }: { config: AppConfig; results: R
           <table className="w-full" style={{ borderCollapse: 'collapse', fontFamily: 'Nunito Sans' }}>
             <thead>
               <tr style={{ color: '#4a7d65', fontFamily: 'DM Mono', fontSize: '0.62rem' }}>
-                {['FOLIO', 'LIGA', 'QUINIELA', 'PARTICIPANTE', 'CUOTA', 'ESTADO'].map(h => (
+                {['FOLIO', 'LIGA', 'PRONÓSTICO', 'PARTICIPANTE', 'CUOTA', 'ESTADO'].map(h => (
                   <th key={h} className="text-left px-3 py-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>{h}</th>
                 ))}
               </tr>

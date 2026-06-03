@@ -22,7 +22,7 @@ export function Header({ currentPage, onNavigate, userName, isAdmin, showRifa, o
   const [menuOpen, setMenuOpen] = useState(false);
   const navItems = [
     ...BASE_NAV.slice(0, 3),
-    ...(showRifa ? [{ label: 'Rifa de Países', page: 'rifa' as Page }] : []),
+    ...(showRifa ? [{ label: 'Quiniela', page: 'rifa' as Page }] : []),
     ...BASE_NAV.slice(3),
     ...(isAdmin ? [{ label: 'Admin', page: 'admin' as Page }] : []),
   ];
@@ -37,7 +37,7 @@ export function Header({ currentPage, onNavigate, userName, isAdmin, showRifa, o
             <Trophy size={16} style={{ color: '#062b1a' }} />
           </div>
           <div className="leading-none">
-            <div style={{ fontFamily: 'Oswald, sans-serif', color: '#f5a623', fontSize: '14px', fontWeight: 700, letterSpacing: '0.05em' }}>PRONOSTICA PANTERA</div>
+            <div style={{ fontFamily: 'Oswald, sans-serif', color: '#f5a623', fontSize: '14px', fontWeight: 700, letterSpacing: '0.05em' }}>PANTERA MUNDIALISTA</div>
             <div style={{ fontFamily: 'Oswald, sans-serif', color: '#7eb89a', fontSize: '10px', letterSpacing: '0.1em' }}>MUNDIAL 2026</div>
           </div>
         </button>

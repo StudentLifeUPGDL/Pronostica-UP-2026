@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Dice5, RefreshCw, Download, AlertCircle, Crown } from 'lucide-react';
+import { Dice5, RefreshCw, Download, AlertCircle, Trophy, Coffee } from 'lucide-react';
 import {
   getTeam, POOL_CAPACITY,
   type AppConfig, type Results, type Ticket, type Pool, type PaymentStatus,
 } from '../data/worldcup';
-import { fetchAllTickets, fetchPools, setTicketPayment, poolPrize } from '../../lib/rifa';
+import { fetchAllTickets, fetchPools, setTicketPayment, rifaPlaces, rifaCashTotal } from '../../lib/rifa';
 import { fetchAllUsers, type UserDoc } from '../../lib/predictions';
 
 function money(n: number, currency: string) {
@@ -52,18 +52,15 @@ export function AdminRifa({ config, results }: { config: AppConfig; results: Res
     finally { setBusy(false); }
   }
 
-  const ticketsByPool = useMemo(() => {
-    const m: Record<string, Ticket[]> = {};
-    for (const t of tickets) if (t.poolId) (m[t.poolId] ??= []).push(t);
-    return m;
-  }, [tickets]);
-
-  // Winner of a podium slot within a pool = owner of the ticket holding that team.
-  function podiumWinner(poolId: string, teamId: string) {
+  // Owner of the ticket holding a given team. The Rifa is a single 48-team raffle,
+  // so each team is held by exactly one ticket once assigned.
+  function holderOf(teamId: string) {
     if (!teamId) return null;
-    const t = (ticketsByPool[poolId] ?? []).find(x => x.teamId === teamId);
+    const t = tickets.find(x => x.teamId === teamId);
     return t ? who(t) : null;
   }
+
+  const places = useMemo(() => rifaPlaces(results), [results]);
 
   function exportCsv() {
     const rows = [['Folio', 'Pool', 'Equipo', 'Nombre', 'Email', 'Codigo', 'EstadoPago', 'Notificado', 'Creado', 'Pagado']];
@@ -89,7 +86,7 @@ export function AdminRifa({ config, results }: { config: AppConfig; results: Res
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="flex items-center gap-2">
           <Dice5 size={18} style={{ color: '#f5a623' }} />
-          <span style={{ fontFamily: 'Oswald, sans-serif', color: '#f5a623', fontSize: '1.1rem', letterSpacing: '0.05em' }}>RIFA DE PAÍSES (PRIVADO)</span>
+          <span style={{ fontFamily: 'Oswald, sans-serif', color: '#f5a623', fontSize: '1.1rem', letterSpacing: '0.05em' }}>QUINIELA (PRIVADO)</span>
         </div>
         <div className="flex gap-2">
           <button onClick={load} disabled={busy} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg cursor-pointer disabled:opacity-50" style={{ background: '#0d5035', color: '#9cc4b2', border: '1px solid rgba(255,255,255,0.1)', fontFamily: 'Oswald, sans-serif', fontSize: '0.76rem' }}>
@@ -122,38 +119,76 @@ export function AdminRifa({ config, results }: { config: AppConfig; results: Res
           <div className="px-5 py-6 text-center" style={{ color: '#4a7d65', fontSize: '0.82rem' }}>Aún no hay pools. Se crean solos cuando hay boletos pagados.</div>
         ) : (
           <div className="flex flex-col">
-            {pools.map(pool => {
-              const prize = poolPrize(pool, config.payoutPercent, config.payoutRoundTo);
-              const champ = podiumWinner(pool.id, results.champion);
-              const runner = podiumWinner(pool.id, results.runnerUp);
-              const third = podiumWinner(pool.id, results.thirdPlace);
-              return (
-                <div key={pool.id} className="px-5 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                  <div className="flex items-center justify-between flex-wrap gap-2">
-                    <span style={{ fontFamily: 'Oswald, sans-serif', color: '#e0f0e8', fontSize: '0.9rem', letterSpacing: '0.04em' }}>
-                      Pool #{pool.index}
-                      <span style={{ color: pool.status === 'assigned' ? '#4ade80' : '#f5a623', fontFamily: 'DM Mono', fontSize: '0.68rem', marginLeft: '8px' }}>
-                        {pool.status === 'assigned' ? 'ASIGNADO' : `${pool.paidCount}/${POOL_CAPACITY} ABIERTO`}
-                      </span>
-                    </span>
-                    <span style={{ fontFamily: 'DM Mono', fontSize: '0.7rem', color: '#d4f226' }}>Premio: {money(prize.distributable, config.currency)}</span>
-                  </div>
-                  {pool.status === 'assigned' && (
-                    <div className="flex flex-wrap gap-x-5 gap-y-1 mt-1.5" style={{ fontSize: '0.74rem' }}>
-                      {([['🏆', champ, prize.champion], ['🥈', runner, prize.runnerUp], ['🥉', third, prize.thirdPlace]] as const).map(([icon, w, amt], i) => (
-                        <span key={i} className="flex items-center gap-1.5" style={{ color: '#9cc4b2' }}>
-                          <Crown size={11} style={{ color: '#f5a623', opacity: w ? 1 : 0.3 }} />
-                          {icon} {w ? <strong style={{ color: '#e0f0e8' }}>{w.name}</strong> : <span style={{ color: '#4a7d65' }}>sin definir</span>}
-                          <span style={{ color: '#d4f226', fontFamily: 'DM Mono', fontSize: '0.66rem' }}>({money(amt, config.currency)})</span>
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+            {pools.map(pool => (
+              <div key={pool.id} className="px-5 py-3 flex items-center justify-between flex-wrap gap-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                <span style={{ fontFamily: 'Oswald, sans-serif', color: '#e0f0e8', fontSize: '0.9rem', letterSpacing: '0.04em' }}>
+                  Pool #{pool.index}
+                  <span style={{ color: pool.status === 'assigned' ? '#4ade80' : '#f5a623', fontFamily: 'DM Mono', fontSize: '0.68rem', marginLeft: '8px' }}>
+                    {pool.status === 'assigned' ? 'ASIGNADO' : `${pool.paidCount}/${POOL_CAPACITY} ABIERTO`}
+                  </span>
+                </span>
+                <span style={{ fontFamily: 'DM Mono', fontSize: '0.68rem', color: '#7eb89a' }}>
+                  {money((pool.fee ?? config.rifaFee) * POOL_CAPACITY, config.currency)} recaudado si se llena
+                </span>
+              </div>
+            ))}
           </div>
         )}
+      </section>
+
+      {/* ── Prizes & winners ── */}
+      <section className="rounded-xl overflow-hidden" style={{ background: '#0d5035', border: '1px solid rgba(245,166,35,0.2)' }}>
+        <div className="px-5 py-3 flex items-center justify-between flex-wrap gap-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+          <span className="flex items-center gap-2" style={{ fontFamily: 'Oswald, sans-serif', color: '#f5a623', fontSize: '0.95rem', letterSpacing: '0.05em' }}>
+            <Trophy size={15} /> PREMIOS Y GANADORES
+          </span>
+          <span style={{ fontFamily: 'DM Mono', fontSize: '0.68rem', color: '#7eb89a' }}>
+            Efectivo total: {money(rifaCashTotal(config.rifaPrizes), config.currency)} + vales Nessu
+          </span>
+        </div>
+        <div className="flex flex-col">
+          {([
+            ['🏆 1° Campeón', places.first, config.rifaPrizes.first],
+            ['🥈 2° Subcampeón', places.second, config.rifaPrizes.second],
+            ['🥉 3° Tercer lugar', places.third, config.rifaPrizes.third],
+            ['4° Cuarto lugar', places.fourth, config.rifaPrizes.fourth],
+          ] as const).map(([label, teamId, amount], i) => {
+            const w = holderOf(teamId);
+            return (
+              <div key={i} className="px-5 py-2.5 flex items-center justify-between flex-wrap gap-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                <span style={{ color: '#e0f0e8', fontSize: '0.82rem', fontFamily: 'Oswald, sans-serif', letterSpacing: '0.02em', minWidth: '150px' }}>
+                  {label} <span style={{ color: '#d4f226', fontFamily: 'DM Mono', fontSize: '0.7rem' }}>{money(amount, config.currency)}</span>
+                </span>
+                <span style={{ color: '#9cc4b2', fontSize: '0.78rem' }}>
+                  {teamId ? <>{getTeam(teamId).flag} {getTeam(teamId).shortName} · </> : null}
+                  {w ? <strong style={{ color: '#e0f0e8' }}>{w.name}</strong> : <span style={{ color: '#4a7d65' }}>{teamId ? 'sin boleto asignado' : 'por definir'}</span>}
+                  {w?.email ? <span style={{ color: '#4a7d65', fontFamily: 'DM Mono', fontSize: '0.66rem' }}> · {w.email}</span> : null}
+                </span>
+              </div>
+            );
+          })}
+          {(places.quartersOut.length > 0 || places.roundOf16Out.length > 0) && (
+            <div className="px-5 py-3" style={{ background: 'rgba(212,242,38,0.04)' }}>
+              <div className="flex items-center gap-1.5 mb-2">
+                <Coffee size={13} style={{ color: '#d4f226' }} />
+                <span style={{ color: '#d4f226', fontSize: '0.74rem', fontFamily: 'Oswald, sans-serif', letterSpacing: '0.04em' }}>
+                  VALES NESSU 5°–16° ({money(config.rifaPrizes.consolation, config.currency)} c/u)
+                </span>
+              </div>
+              <div className="flex flex-col gap-1">
+                {[...places.quartersOut, ...places.roundOf16Out].map(id => {
+                  const w = holderOf(id);
+                  return (
+                    <div key={id} className="flex items-center gap-2" style={{ fontSize: '0.76rem', color: '#9cc4b2' }}>
+                      <span style={{ minWidth: '110px' }}>{getTeam(id).flag} {getTeam(id).shortName}</span>
+                      {w ? <strong style={{ color: '#e0f0e8' }}>{w.name}</strong> : <span style={{ color: '#4a7d65' }}>sin boleto asignado</span>}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
       </section>
 
       {/* ── Ticket payment management ── */}

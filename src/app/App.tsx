@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
-  type Prediction, type AppConfig, type Results, type Ticket, type Pool,
-  DEFAULT_CONFIG, EMPTY_RESULTS,
+  type Prediction, type AppConfig, type Results, type Ticket, type Pool, type PublicStats,
+  DEFAULT_CONFIG, EMPTY_RESULTS, EMPTY_PUBLIC_STATS,
 } from './data/worldcup';
 import { useAuth } from '../lib/auth';
 import {
@@ -9,6 +9,7 @@ import {
   saveMainPrediction, saveSideEntry, deletePrediction,
 } from '../lib/predictions';
 import { fetchMyTickets, fetchPools, buyTicket, deleteTicket } from '../lib/rifa';
+import { fetchPublicStats } from '../lib/stats';
 import { AuthPage } from './components/AuthPage';
 import { Header } from './components/Header';
 import { HomePage } from './components/HomePage';
@@ -66,6 +67,7 @@ export default function App() {
   const [pools, setPools] = useState<Pool[]>([]);
   const [config, setConfig] = useState<AppConfig>(DEFAULT_CONFIG);
   const [results, setResults] = useState<Results>(EMPTY_RESULTS);
+  const [stats, setStats] = useState<PublicStats>(EMPTY_PUBLIC_STATS);
   const [wizard, setWizard] = useState<WizardState | null>(null);
   const [adminTab, setAdminTab] = useState<'report' | 'rifa' | 'results'>('report');
   const [actionError, setActionError] = useState('');
@@ -75,10 +77,11 @@ export default function App() {
   const reloadData = useCallback(async () => {
     if (!uid) return;
     try {
-      const [preds, cfg, res] = await Promise.all([fetchMyPredictions(uid), fetchConfig(), fetchResults()]);
+      const [preds, cfg, res, st] = await Promise.all([fetchMyPredictions(uid), fetchConfig(), fetchResults(), fetchPublicStats()]);
       setPredictions(preds);
       setConfig(cfg);
       setResults(res);
+      setStats(st);
     } catch (e) {
       console.error('Error cargando datos', e);
     }
@@ -115,9 +118,9 @@ export default function App() {
   }
 
   function handleNewPrediction() {
-    if (lockPassed) { setActionError('El torneo ya inició: no se pueden crear nuevas quinielas.'); return; }
+    if (lockPassed) { setActionError('El torneo ya inició: no se pueden crear nuevos pronósticos.'); return; }
     const n = predictions.filter(p => p.league === 'main').length + 1;
-    setWizard({ mode: 'main', base: null, name: `Mi Quiniela #${n}` });
+    setWizard({ mode: 'main', base: null, name: `Mi Pronóstico #${n}` });
     setCurrentPage('bracket');
   }
 
@@ -141,7 +144,7 @@ export default function App() {
     setWizard({
       mode: round === 'r32' ? 'joinR32' : 'joinR16',
       base: null,
-      name: round === 'r32' ? 'Mi Quiniela R32 · Liga aparte' : 'Mi Quiniela R16 · Liga aparte',
+      name: round === 'r32' ? 'Mi Pronóstico R32 · Liga aparte' : 'Mi Pronóstico R16 · Liga aparte',
     });
     setCurrentPage('bracket');
   }
@@ -236,6 +239,7 @@ export default function App() {
                 predictions={predictions}
                 results={results}
                 config={config}
+                stats={stats}
               />
             )}
             {currentPage === 'results' && <ResultsPage results={results} />}
@@ -269,7 +273,7 @@ export default function App() {
             {showAdmin && (
               <div className="max-w-6xl mx-auto px-4 py-6">
                 <div className="flex gap-2 mb-5">
-                  {([['report', 'Reporte general'], ['rifa', 'Rifa de Países'], ['results', 'Resultados / Config']] as const).map(([key, label]) => (
+                  {([['report', 'Reporte general'], ['rifa', 'Quiniela'], ['results', 'Resultados / Config']] as const).map(([key, label]) => (
                     <button key={key} onClick={() => setAdminTab(key)}
                       className="px-4 py-2 rounded-lg cursor-pointer"
                       style={{
@@ -299,7 +303,7 @@ export default function App() {
       <footer style={{ borderTop: '1px solid rgba(255,255,255,0.06)', padding: '16px 24px', textAlign: 'center' }}>
         <div className="h-1 mb-3" style={{ background: 'repeating-linear-gradient(90deg, #f5a623 0px, #f5a623 8px, #d4f226 8px, #d4f226 16px, #0a3d28 16px, #0a3d28 24px)', borderRadius: '999px', maxWidth: '200px', margin: '0 auto 12px' }} />
         <p style={{ color: '#3a6b55', fontSize: '0.72rem', fontFamily: 'DM Mono, monospace', letterSpacing: '0.08em' }}>
-          PRONOSTICA PANTERA · UNIVERSIDAD PANAMERICANA · MUNDIAL FIFA 2026 · EE.UU. · CANADÁ · MÉXICO
+          PANTERA MUNDIALISTA · UNIVERSIDAD PANAMERICANA · MUNDIAL FIFA 2026 · EE.UU. · CANADÁ · MÉXICO
         </p>
       </footer>
     </div>

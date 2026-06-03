@@ -41,7 +41,7 @@ interface BracketWizardProps {
 export function BracketWizard({
   userId, userEmail, userDisplayName,
   mode = 'main', basePrediction, results = EMPTY_RESULTS,
-  onSave, onCancel, predictionName = 'Mi Quiniela',
+  onSave, onCancel, predictionName = 'Mi Pronóstico',
 }: BracketWizardProps) {
   const name = mode === 'main' ? (basePrediction?.name ?? predictionName) : predictionName;
 
@@ -303,7 +303,7 @@ export function BracketWizard({
       // Keep the wizard mounted and reveal the confirmation screen with the folio.
       setSaved({ pred, isEdit });
     } catch (e) {
-      setSaveError((e as Error)?.message ?? 'No se pudo guardar la quiniela.');
+      setSaveError((e as Error)?.message ?? 'No se pudo guardar el pronóstico.');
     } finally {
       setSaving(false);
     }
@@ -969,7 +969,7 @@ export function BracketWizard({
             <CheckCircle2 size={30} style={{ color: '#4ade80' }} />
           </div>
           <h1 style={{ fontFamily: 'Oswald, sans-serif', color: '#4ade80', fontSize: '1.5rem', fontWeight: 700, letterSpacing: '0.04em' }}>
-            {saved.isEdit ? '¡QUINIELA ACTUALIZADA!' : '¡QUINIELA GUARDADA!'}
+            {saved.isEdit ? '¡PRONÓSTICO ACTUALIZADO!' : '¡PRONÓSTICO GUARDADO!'}
           </h1>
           <p style={{ color: '#9cc4b2', fontSize: '0.86rem', marginTop: '6px' }}>{saved.pred.name}</p>
 
@@ -999,14 +999,14 @@ export function BracketWizard({
             </>
           ) : (
             <p style={{ color: '#c0d8cc', fontSize: '0.84rem', marginTop: '18px' }}>
-              Esta quiniela ya está pagada. Tu folio queda como referencia.
+              Este pronóstico ya está pagado. Tu folio queda como referencia.
             </p>
           )}
 
           <button onClick={onCancel}
             className="mt-7 inline-flex items-center gap-2 px-6 py-3 rounded-xl cursor-pointer"
             style={{ background: '#f5a623', color: '#062b1a', fontFamily: 'Oswald, sans-serif', fontWeight: 700, fontSize: '0.86rem', letterSpacing: '0.05em' }}>
-            IR A MIS QUINIELAS <ChevronRight size={16} />
+            IR A MIS PRONÓSTICOS <ChevronRight size={16} />
           </button>
         </div>
       </div>

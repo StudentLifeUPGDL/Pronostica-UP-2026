@@ -3,7 +3,7 @@
 > **Estado:** la app base **ya está en línea y operando** (Firebase, reglas, pago por
 > Google Form, Vercel, claim de admin y `config/app` sembrado). Esta guía conserva esos
 > pasos como **referencia / ya completado** y agrega lo único nuevo pendiente: **activar
-> la Rifa de Países** (sección ⭐ al final).
+> la Quiniela** (sección ⭐ al final).
 
 ---
 
@@ -27,9 +27,9 @@
 
 ---
 
-## ⭐ NUEVO — Activar la "Rifa de Países" (modo tradicional)
+## ⭐ NUEVO — Activar la "Quiniela" (modo tradicional)
 
-La Rifa permite comprar boletos que asignan **una selección al azar**. Cuando un pool
+La Quiniela permite comprar boletos que asignan **una selección al azar**. Cuando un pool
 junta **48 boletos pagados**, un **cron de GitHub Actions** sortea los 48 equipos,
 **envía un correo** (Resend) a cada dueño y abre el siguiente pool. Toda la asignación
 ocurre en el servidor (cron con `firebase-admin`), nunca en el navegador, así que nadie
@@ -54,7 +54,7 @@ o pega `firestore.rules` en Firestore → **Rules → Publicar**.
 `config/app` ahora tiene `rifaEnabled`, `rifaFee` y `rifaPayoutSplit`.
 
 1. [ ] Entra como admin → **Admin → Resultados / Config**.
-2. [ ] En la sección **RIFA DE PAÍSES**: activa el modo, fija el **precio por boleto**
+2. [ ] En la sección **QUINIELA (MODO TRADICIONAL)**: activa el modo, fija el **precio por boleto**
    (default $50) y el **reparto del bote** (default 70% campeón / 20% subcampeón / 10% 3°).
 3. [ ] Pulsa **Guardar configuración**.
 
@@ -66,7 +66,7 @@ Sale autenticado por Google, así que entrega bien (no spam). Límite ~500 corre
 1. [ ] En la cuenta de Gmail que enviará los correos, activa **Verificación en 2 pasos**
    (https://myaccount.google.com/security).
 2. [ ] Crea una **Contraseña de aplicación**: https://myaccount.google.com/apppasswords
-   → nómbrala "Pronostica Pantera" → copia los **16 caracteres** (sin espacios).
+   → nómbrala "Pantera Mundialista" → copia los **16 caracteres** (sin espacios).
 3. [ ] Esa cadena es tu `GMAIL_APP_PASSWORD` (NO es tu contraseña normal de Gmail).
 
 > ⚠️ El correo `@up.edu.mx` no sirve aquí (Resend exigía verificar el dominio y no eres
@@ -81,7 +81,7 @@ En el repo → **Settings → Secrets and variables → Actions → New reposito
 | `FIREBASE_SERVICE_ACCOUNT` | El JSON de la cuenta de servicio en **una sola línea** | Sí, lo usa `sync-results` |
 | `GMAIL_USER` | El Gmail que envía, ej. `tucorreo@gmail.com` | **Nuevo** |
 | `GMAIL_APP_PASSWORD` | Los 16 caracteres del paso C | **Nuevo** |
-| `GMAIL_FROM_NAME` | `Pronostica Pantera` (opcional, nombre visible) | **Nuevo** |
+| `GMAIL_FROM_NAME` | `Pantera Mundialista` (opcional, nombre visible) | **Nuevo** |
 | `APP_URL` | `https://tu-app.vercel.app` (opcional, botón del correo) | **Nuevo** |
 
 > Si `FIREBASE_SERVICE_ACCOUNT` ya está configurado para `sync-results.yml`, **no** hay
@@ -101,11 +101,11 @@ se puede disparar a mano.
 > un sorteo al instante, usa **Run workflow** manualmente. Una asignación verdaderamente
 > instantánea requeriría Cloud Functions (plan Blaze), que este proyecto no usa.
 
-### F — Prueba de humo de la Rifa
+### F — Prueba de humo de la Quiniela
 
-- [ ] Como usuario: **Rifa de Países → Comprar boleto** → aparece el folio `RIFA-XXXXX` y
+- [ ] Como usuario: **Quiniela → Comprar boleto** → aparece el folio `RIFA-XXXXX` y
   el botón **Confirmar transferencia** (abre el Google Form prellenado con folio y correo).
-- [ ] Como admin: **Admin → Rifa de Países** → cambia ese boleto a **pagado**.
+- [ ] Como admin: **Admin → Quiniela** → cambia ese boleto a **pagado**.
 - [ ] (Para probar la asignación sin esperar 48 boletos) baja temporalmente la prueba:
   marca 48 boletos como pagados, o ejecuta el cron en seco localmente:
   ```sh
@@ -127,7 +127,7 @@ se puede disparar a mano.
 | "Missing or insufficient permissions" al **crear quiniela** | `config/app` no sembrado | Admin → Guardar configuración |
 | "Missing or insufficient permissions" al **comprar boleto** | Reglas nuevas no publicadas | Sección **A** (re-publicar `firestore.rules`) |
 | "Missing or insufficient permissions" al **guardar config/resultados** | Falta el claim `admin` | `setAdmin.mjs` (y volver a iniciar sesión) |
-| No aparece la pestaña **Rifa de Países** | `rifaEnabled` apagado | Admin → Resultados / Config → activar Rifa → Guardar |
+| No aparece la pestaña **Quiniela** | `rifaEnabled` apagado | Admin → Resultados / Config → activar Quiniela → Guardar |
 | Los pools no se asignan | El cron no corre / faltan secrets | Actions → habilitar **"Manage Rifa pools"**; revisa `FIREBASE_SERVICE_ACCOUNT` |
 | No llegan correos | `RESEND_*` mal o dominio sin verificar | Revisa secrets `RESEND_API_KEY`/`RESEND_FROM` y el dominio en Resend |
 | El botón de pago no aparece | Faltan `VITE_PAYMENT_FORM_*` | Configurar el Google Form + Redeploy |

@@ -2,9 +2,10 @@ import {
   collection, doc, getDocs, setDoc, updateDoc, deleteDoc, query, where,
 } from 'firebase/firestore';
 import { db, firebaseConfigured } from './firebase';
+import { recomputePublicStats } from './stats';
 import {
   makeTicketFolio, POOL_CAPACITY,
-  type Ticket, type Pool, type PaymentStatus, type Results,
+  type Ticket, type Pool, type PaymentStatus, type Results, type RifaPrizes,
 } from '../app/data/worldcup';
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
@@ -67,6 +68,7 @@ export async function setTicketPayment(
   patch.paidAt = status === 'paid' ? new Date().toISOString() : null;
   if (note !== undefined) patch.paymentNote = note;
   await updateDoc(doc(db, 'tickets', id), patch);
+  await recomputePublicStats().catch(() => {});
 }
 
 // Owner may delete only an unpaid ticket not yet in a pool; admin may delete any.
@@ -82,30 +84,64 @@ export async function fetchPools(): Promise<Pool[]> {
   return snap.docs.map(d => d.data() as Pool).sort((a, b) => a.index - b.index);
 }
 
-// ─── prize math ──────────────────────────────────────────────────────────────
+// ─── prize ladder (fixed prizes funded by the organizer) ──────────────────────
 
-export interface PoolPrize {
-  gross: number;        // fee × capacity
-  distributable: number; // gross × payoutPercent, rounded DOWN to roundTo
-  champion: number;
-  runnerUp: number;
-  thirdPlace: number;
+// Static description of the prize ladder, for display ("¿Qué se gana?").
+export interface RifaLadderTier {
+  place: string;                 // "1°", "5°–8°", …
+  label: string;                 // "Campeón", "Eliminados en Cuartos", …
+  kind: 'cash' | 'voucher';
+  amount: number;                // cash prize, or voucher value per person
+  seats: number;                 // how many tickets get this tier
 }
 
-// A pool's prize = full pool (fee × 48) × payoutPercent, rounded down, then split
-// by the pool's payoutSplit between the holders of champ / runner-up / 3rd-place.
-export function poolPrize(pool: Pool, payoutPercent: number, roundTo: number): PoolPrize {
-  const gross = pool.fee * pool.capacity;
-  const raw = gross * payoutPercent;
-  const distributable = roundTo > 0 ? Math.floor(raw / roundTo) * roundTo : Math.floor(raw);
-  const [c = 0, r = 0, t = 0] = pool.payoutSplit ?? [];
+export function rifaPrizeLadder(prizes: RifaPrizes): RifaLadderTier[] {
+  return [
+    { place: '1°', label: 'Campeón', kind: 'cash', amount: prizes.first, seats: 1 },
+    { place: '2°', label: 'Subcampeón', kind: 'cash', amount: prizes.second, seats: 1 },
+    { place: '3°', label: 'Tercer lugar', kind: 'cash', amount: prizes.third, seats: 1 },
+    { place: '4°', label: 'Cuarto lugar', kind: 'cash', amount: prizes.fourth, seats: 1 },
+    { place: '5°–8°', label: 'Eliminados en Cuartos', kind: 'voucher', amount: prizes.consolation, seats: 4 },
+    { place: '9°–16°', label: 'Eliminados en Octavos', kind: 'voucher', amount: prizes.consolation, seats: 8 },
+  ];
+}
+
+// Which TEAMS currently occupy each prize place, derived live from the official
+// Results. The owner of the ticket holding that team is the prize winner.
+//   1°–4° → cash (4° = the semifinalist that isn't champ/runner-up/3rd)
+//   5°–8° → eliminados en Cuartos  (reached QF, didn't reach SF)
+//   9°–16° → eliminados en Octavos (reached R16, didn't reach QF)
+export interface RifaPlaces {
+  first: string;          // teamId or ''
+  second: string;
+  third: string;
+  fourth: string;
+  quartersOut: string[];  // 5°–8°
+  roundOf16Out: string[]; // 9°–16°
+}
+
+export function rifaPlaces(r: Results): RifaPlaces {
+  const qf = (r.qfWinners ?? []).filter(Boolean);     // 4 semifinalists
+  const r16 = (r.r16Winners ?? []).filter(Boolean);   // 8 teams that reached QF
+  const r32 = (r.r32Winners ?? []).filter(Boolean);   // 16 teams that reached R16 (octavos)
+
+  // 4th place is the remaining semifinalist once the 3rd-place match is decided.
+  const podium = new Set([r.champion, r.runnerUp, r.thirdPlace].filter(Boolean));
+  const fourth = r.thirdPlace ? (qf.find(t => !podium.has(t)) ?? '') : '';
+
   return {
-    gross,
-    distributable,
-    champion: Math.floor(distributable * c),
-    runnerUp: Math.floor(distributable * r),
-    thirdPlace: Math.floor(distributable * t),
+    first: r.champion ?? '',
+    second: r.runnerUp ?? '',
+    third: r.thirdPlace ?? '',
+    fourth,
+    quartersOut: r16.filter(t => !qf.includes(t)),
+    roundOf16Out: r32.filter(t => !r16.includes(t)),
   };
+}
+
+// Total cash put up by the organizer (excludes the Nessu vouchers).
+export function rifaCashTotal(prizes: RifaPrizes): number {
+  return prizes.first + prizes.second + prizes.third + prizes.fourth;
 }
 
 // ─── team progress (display) ──────────────────────────────────────────────────

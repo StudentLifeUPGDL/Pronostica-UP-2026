@@ -1,13 +1,19 @@
 import { useState } from 'react';
 import {
-  Ticket as TicketIcon, Dice5, Trash2, Copy, Check, Loader2, Sparkles, Info,
+  Ticket as TicketIcon, Dice5, Trash2, Copy, Check, Loader2, Sparkles, Trophy, Coffee, ShieldCheck, CalendarClock,
 } from 'lucide-react';
 import {
   getTeam, POOL_CAPACITY,
   type Ticket, type Pool, type AppConfig, type Results, type PaymentStatus,
 } from '../data/worldcup';
-import { poolPrize, teamStatus } from '../../lib/rifa';
+import { rifaPrizeLadder, rifaPlaces, teamStatus } from '../../lib/rifa';
 import { buildPaymentFormUrl, paymentFormConfigured, RIFA_LABEL } from '../../lib/payment';
+
+function formatDate(iso: string): string {
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '';
+  return d.toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' });
+}
 
 interface RifaPageProps {
   tickets: Ticket[];
@@ -132,12 +138,10 @@ export function RifaPage({ tickets, pools, config, results, email, onBuy, onDele
   const filled = openPool?.paidCount ?? 0;
   const progress = Math.min(100, Math.round((filled / POOL_CAPACITY) * 100));
 
-  // Estimated prize for a FULL pool at the current fee/split (display).
-  const samplePool: Pool = openPool ?? {
-    id: '', index: currentIndex, status: 'open', capacity: POOL_CAPACITY,
-    paidCount: filled, fee: config.rifaFee, payoutSplit: config.rifaPayoutSplit, createdAt: '',
-  };
-  const prize = poolPrize(samplePool, config.payoutPercent, config.payoutRoundTo);
+  // Fixed prize ladder (funded by the organizer) + live standings of who's in the money.
+  const ladder = rifaPrizeLadder(config.rifaPrizes);
+  const places = rifaPlaces(results);
+  const hasResults = !!((results.r32Winners?.length ?? 0) > 0 || results.champion);
 
   async function handleBuy() {
     setBusy(true); setError('');
@@ -156,12 +160,13 @@ export function RifaPage({ tickets, pools, config, results, email, onBuy, onDele
     <div className="max-w-4xl mx-auto px-4 py-6">
       <div className="flex items-center gap-2 mb-1">
         <Dice5 size={22} style={{ color: '#f5a623' }} />
-        <h1 style={{ fontFamily: 'Oswald, sans-serif', color: '#f5a623', fontSize: '1.8rem', fontWeight: 700, letterSpacing: '0.04em' }}>RIFA DE PAÍSES</h1>
+        <h1 style={{ fontFamily: 'Oswald, sans-serif', color: '#f5a623', fontSize: '1.8rem', fontWeight: 700, letterSpacing: '0.04em' }}>QUINIELA</h1>
       </div>
-      <p style={{ color: '#7eb89a', fontSize: '0.85rem', marginBottom: '20px', maxWidth: '640px' }}>
-        El modo tradicional: compra un boleto y se te asigna <strong style={{ color: '#d4f226' }}>una selección al azar</strong> del
-        Mundial. Cuando un pool junta <strong>{POOL_CAPACITY} boletos pagados</strong>, se reparten los {POOL_CAPACITY} equipos al
-        instante y te llega un correo con el tuyo. Puedes comprar <strong>los boletos que quieras</strong> y entrar a varios pools.
+      <p style={{ color: '#7eb89a', fontSize: '0.85rem', marginBottom: '16px', maxWidth: '680px' }}>
+        Compra un boleto y se te asigna <strong style={{ color: '#d4f226' }}>una selección al azar</strong> del Mundial.
+        Ganas según <strong style={{ color: '#d4f226' }}>qué tan lejos llegue tu país</strong>: los premios en efectivo son para los
+        4 primeros lugares y hay <strong>vales de café para el Nessu</strong> para los lugares 5° a 16°. La quiniela
+        <strong> solo corre si se llenan los {POOL_CAPACITY} boletos</strong>; si no se llena, se te regresa tu dinero.
       </p>
 
       {error && (
@@ -176,8 +181,8 @@ export function RifaPage({ tickets, pools, config, results, email, onBuy, onDele
             <div style={{ color: '#7eb89a', fontSize: '0.78rem', fontFamily: 'DM Mono' }}>{filled}/{POOL_CAPACITY} boletos pagados</div>
           </div>
           <div className="text-right">
-            <div style={{ color: '#4a7d65', fontSize: '0.64rem', fontFamily: 'DM Mono', letterSpacing: '0.05em' }}>PREMIO ESTIMADO (POOL LLENO)</div>
-            <div style={{ color: '#d4f226', fontFamily: 'Oswald, sans-serif', fontSize: '1.05rem', fontWeight: 700 }}>{money(prize.distributable, config.currency)}</div>
+            <div style={{ color: '#4a7d65', fontSize: '0.64rem', fontFamily: 'DM Mono', letterSpacing: '0.05em' }}>PREMIO MAYOR · 1° LUGAR</div>
+            <div style={{ color: '#d4f226', fontFamily: 'Oswald, sans-serif', fontSize: '1.05rem', fontWeight: 700 }}>{money(config.rifaPrizes.first, config.currency)}</div>
           </div>
         </div>
 
@@ -197,11 +202,89 @@ export function RifaPage({ tickets, pools, config, results, email, onBuy, onDele
             COMPRAR BOLETO · {money(config.rifaFee, config.currency)}
           </button>
           <div className="flex items-center gap-1.5" style={{ color: '#7eb89a', fontSize: '0.74rem' }}>
-            <Info size={13} />
-            <span>Reparto del bote: {(config.rifaPayoutSplit[0] ?? 0) * 100}% campeón · {(config.rifaPayoutSplit[1] ?? 0) * 100}% subcampeón · {(config.rifaPayoutSplit[2] ?? 0) * 100}% 3°</span>
+            <CalendarClock size={13} />
+            <span>Registro y pago <strong>antes del primer partido</strong>{formatDate(config.lockDate) ? ` (${formatDate(config.lockDate)})` : ''}.</span>
           </div>
         </div>
       </div>
+
+      {/* ── Prize ladder ── */}
+      <div className="rounded-2xl overflow-hidden mb-6" style={{ background: '#0d5035', border: '1px solid rgba(255,255,255,0.07)' }}>
+        <div className="px-5 py-3 flex items-center gap-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+          <Trophy size={16} style={{ color: '#f5a623' }} />
+          <span style={{ fontFamily: 'Oswald, sans-serif', color: '#f5a623', fontSize: '1rem', letterSpacing: '0.05em' }}>PREMIOS · SEGÚN QUÉ TAN LEJOS LLEGUE TU PAÍS</span>
+        </div>
+        <div className="divide-y" style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
+          {ladder.map(tier => (
+            <div key={tier.place} className="px-5 py-3 flex items-center gap-3" style={{ borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+              <div className="w-14 text-center rounded-lg py-1 flex-shrink-0" style={{ background: tier.kind === 'cash' ? 'rgba(245,166,35,0.12)' : 'rgba(212,242,38,0.08)', fontFamily: 'Oswald, sans-serif', color: tier.kind === 'cash' ? '#f5a623' : '#d4f226', fontSize: '0.95rem', fontWeight: 700 }}>
+                {tier.place}
+              </div>
+              <div className="flex-1 min-w-0 flex items-center gap-2">
+                {tier.kind === 'cash'
+                  ? <Trophy size={14} style={{ color: '#f5a623', flexShrink: 0 }} />
+                  : <Coffee size={14} style={{ color: '#d4f226', flexShrink: 0 }} />}
+                <span style={{ fontFamily: 'Oswald, sans-serif', color: '#e0f0e8', fontSize: '0.86rem', letterSpacing: '0.02em' }}>{tier.label}</span>
+              </div>
+              <div className="text-right flex-shrink-0">
+                {tier.kind === 'cash' ? (
+                  <span style={{ color: '#f5a623', fontFamily: 'Oswald, sans-serif', fontSize: '0.95rem', fontWeight: 700 }}>{money(tier.amount, config.currency)}</span>
+                ) : (
+                  <span style={{ color: '#d4f226', fontFamily: 'DM Mono', fontSize: '0.74rem' }}>vale {money(tier.amount, config.currency)} Nessu · ×{tier.seats}</span>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="px-5 py-3 flex items-start gap-2" style={{ borderTop: '1px solid rgba(255,255,255,0.06)', background: 'rgba(212,242,38,0.04)' }}>
+          <ShieldCheck size={14} style={{ color: '#4ade80', marginTop: '2px', flexShrink: 0 }} />
+          <span style={{ color: '#9cc4b2', fontSize: '0.76rem', lineHeight: 1.5 }}>
+            Los premios los <strong style={{ color: '#d4f226' }}>garantiza la organización</strong> (la UP cubre la diferencia): son fijos, no dependen de cuántos jueguen.
+            La rifa solo se realiza si se venden los {POOL_CAPACITY} boletos; de lo contrario se reembolsa.
+          </span>
+        </div>
+      </div>
+
+      {/* ── Live prize standings ── */}
+      {hasResults && (
+        <div className="rounded-2xl overflow-hidden mb-6" style={{ background: '#0d5035', border: '1px solid rgba(245,166,35,0.2)' }}>
+          <div className="px-5 py-3 flex items-center gap-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+            <Trophy size={16} style={{ color: '#f5a623' }} />
+            <span style={{ fontFamily: 'Oswald, sans-serif', color: '#f5a623', fontSize: '1rem', letterSpacing: '0.05em' }}>CÓMO VA EL PREMIO</span>
+          </div>
+          <div className="p-4 flex flex-col gap-2">
+            {([
+              ['1°', places.first, money(config.rifaPrizes.first, config.currency)],
+              ['2°', places.second, money(config.rifaPrizes.second, config.currency)],
+              ['3°', places.third, money(config.rifaPrizes.third, config.currency)],
+              ['4°', places.fourth, money(config.rifaPrizes.fourth, config.currency)],
+            ] as const).map(([pos, teamId, prize]) => (
+              <div key={pos} className="flex items-center gap-3 px-3 py-2 rounded-lg" style={{ background: 'rgba(255,255,255,0.03)' }}>
+                <span style={{ fontFamily: 'Oswald, sans-serif', color: '#f5a623', fontSize: '0.9rem', fontWeight: 700, minWidth: '28px' }}>{pos}</span>
+                <span className="flex-1" style={{ color: '#e0f0e8', fontSize: '0.86rem' }}>
+                  {teamId ? `${getTeam(teamId).flag} ${getTeam(teamId).name}` : <span style={{ color: '#4a7d65', fontStyle: 'italic' }}>por definir</span>}
+                </span>
+                <span style={{ color: '#d4f226', fontFamily: 'DM Mono', fontSize: '0.74rem' }}>{prize}</span>
+              </div>
+            ))}
+            {(places.quartersOut.length > 0 || places.roundOf16Out.length > 0) && (
+              <div className="mt-1 px-3 py-2.5 rounded-lg" style={{ background: 'rgba(212,242,38,0.05)' }}>
+                <div className="flex items-center gap-1.5 mb-1.5">
+                  <Coffee size={13} style={{ color: '#d4f226' }} />
+                  <span style={{ color: '#d4f226', fontSize: '0.74rem', fontFamily: 'Oswald, sans-serif', letterSpacing: '0.04em' }}>VALES NESSU (5°–16°)</span>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {[...places.quartersOut, ...places.roundOf16Out].map(id => (
+                    <span key={id} className="px-2 py-0.5 rounded-md" style={{ background: 'rgba(255,255,255,0.05)', color: '#c0d8cc', fontSize: '0.72rem' }}>
+                      {getTeam(id).flag} {getTeam(id).shortName}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* ── My tickets ── */}
       <div className="flex items-center gap-2 mb-3">

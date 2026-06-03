@@ -11,7 +11,7 @@ const ENTRY_LEAGUE = import.meta.env.VITE_PAYMENT_FORM_ENTRY_LEAGUE;
 export const paymentFormConfigured = Boolean(BASE);
 
 const LEAGUE_LABEL: Record<League, string> = {
-  main: 'Quiniela principal',
+  main: 'Pronóstico principal',
   r32: 'Liga Dieciseisavos (R32)',
   r16: 'Liga Octavos (R16)',
 };
@@ -20,8 +20,8 @@ export function leagueLabel(league: League): string {
   return LEAGUE_LABEL[league] ?? league;
 }
 
-// Label shown for Rifa de Países tickets on the payment form.
-export const RIFA_LABEL = 'Rifa de Países';
+// Label shown for Quiniela (random-team) tickets on the payment form.
+export const RIFA_LABEL = 'Quiniela';
 
 // Builds a pre-filled Google Form URL carrying the entry's ID, the user's email,
 // and which competition the payment is for, so the user only pastes their transfer.
