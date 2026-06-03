@@ -223,8 +223,10 @@ export function HomePage({ userName, onNavigate, predictions, results, config, s
             </div>
           ) : (
             <div>
-              {predictions.map((p, i) => {
-                const pts = computeScore(p, results).total;
+              {predictions
+                .map(p => ({ p, pts: computeScore(p, results).total }))
+                .sort((a, b) => b.pts - a.pts || (a.p.createdAt ?? '').localeCompare(b.p.createdAt ?? ''))
+                .map(({ p, pts }, i) => {
                 const statusColor = p.paymentStatus === 'paid' ? '#4ade80' : p.paymentStatus === 'void' ? '#e63946' : '#f5a623';
                 return (
                   <div key={p.id} className="px-5 py-3 flex items-center gap-3" style={{ borderTop: i > 0 ? '1px solid rgba(255,255,255,0.05)' : 'none' }}>

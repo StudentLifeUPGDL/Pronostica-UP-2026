@@ -231,14 +231,14 @@ export function ExplanationsPage({ config }: { config: AppConfig }) {
           <p style={{ color: '#7eb89a', fontSize: '0.8rem', fontFamily: 'Nunito Sans', marginBottom: '12px' }}>
             Los puntos se otorgan según el acierto de tu pronóstico y la dificultad de la ronda:
           </p>
-          <PointRow label="Grupo — posición exacta" pts={2} desc="por cada 1°, 2° y 3° exacto" />
-          <PointRow label="Ganador en Dieciséisavos (R32)" pts={3} desc="por equipo que avanza" />
-          <PointRow label="Ganador en Octavos (R16)" pts={5} desc="por equipo que avanza" />
-          <PointRow label="Ganador en Cuartos" pts={8} desc="por equipo que avanza" />
-          <PointRow label="Ganador en Semifinal" pts={13} desc="por equipo que avanza" />
           <PointRow label="Campeón del Mundo" pts={25} desc="si aciertas el campeón" />
+          <PointRow label="Ganador en Semifinal" pts={13} desc="por equipo que avanza" />
           <PointRow label="Subcampeón" pts={10} desc="si aciertas el subcampeón" />
+          <PointRow label="Ganador en Cuartos" pts={8} desc="por equipo que avanza" />
           <PointRow label="Tercer Lugar" pts={7} desc="si aciertas el 3er lugar" />
+          <PointRow label="Ganador en Octavos (R16)" pts={5} desc="por equipo que avanza" />
+          <PointRow label="Ganador en Dieciséisavos (R32)" pts={3} desc="por equipo que avanza" />
+          <PointRow label="Grupo — posición exacta" pts={2} desc="por cada 1°, 2° y 3° exacto" />
           <div className="mt-3 p-3 rounded-lg" style={{ background: 'rgba(245,166,35,0.07)', border: '1px solid rgba(245,166,35,0.12)' }}>
             <span style={{ color: '#f5a623', fontSize: '0.78rem', fontFamily: 'Nunito Sans' }}>
               En grupos cuenta la <strong>posición exacta</strong> (1°, 2° y 3°). En eliminatorias ganas los
