@@ -9,7 +9,9 @@ export function PaymentCta({ prediction, email, compact }: {
   email?: string;
   compact?: boolean;
 }) {
-  if (prediction.paymentStatus === 'paid') return null;
+  // The pay link only makes sense while still pending. Once the user has uploaded a
+  // proof (review), been confirmed (paid) or voided, there's nothing left to pay.
+  if (prediction.paymentStatus !== 'pending') return null;
   const url = buildPredictionPaymentUrl(prediction, email);
 
   if (!paymentConfigured || !url) {

@@ -1,4 +1,4 @@
-rules_version = '3';
+rules_version = '2';
 
 // Quiniela Mundial 2026 — Firestore security rules.
 //
@@ -78,12 +78,22 @@ service cloud.firestore {
                     && createWindowOpen();
 
       allow update: if isAdmin()
+                    // Owner edits their own picks while the league window is open.
                     || (isSignedIn()
                         && resource.data.uid == request.auth.uid
                         && request.resource.data.uid == resource.data.uid
                         && request.resource.data.league == resource.data.league
                         && request.resource.data.paymentStatus == resource.data.paymentStatus
-                        && updateWindowOpen());
+                        && updateWindowOpen())
+                    // Owner submits a payment proof: pending → review, attaching ONLY
+                    // the proof fields (cannot self-mark paid or alter their picks).
+                    // Allowed regardless of the lock window so they can confirm late.
+                    || (isSignedIn()
+                        && resource.data.uid == request.auth.uid
+                        && resource.data.paymentStatus == 'pending'
+                        && request.resource.data.paymentStatus == 'review'
+                        && request.resource.data.diff(resource.data).affectedKeys()
+                             .hasOnly(['paymentStatus', 'proofUrl', 'proofSubmittedAt', 'paymentNote']));
 
       allow delete: if isAdmin()
                     || (isSignedIn() && resource.data.uid == request.auth.uid && updateWindowOpen());
@@ -99,7 +109,8 @@ service cloud.firestore {
 
     // Tickets: a user buys a PENDING ticket for themselves with no pool/team. The
     // cron (admin SDK) bins paid tickets into pools and assigns the random team, so
-    // the client can never set poolId/teamId/paymentStatus. Updates are admin-only.
+    // the client can never set poolId/teamId/paymentStatus. Apart from submitting a
+    // payment proof (pending → review), updates are admin-only.
     match /tickets/{ticketId} {
       allow read: if isAdmin() || (isSignedIn() && resource.data.uid == request.auth.uid);
 
@@ -109,7 +120,15 @@ service cloud.firestore {
                     && request.resource.data.poolId == ''
                     && request.resource.data.teamId == '';
 
-      allow update: if isAdmin();
+      allow update: if isAdmin()
+                    // Owner submits a payment proof: pending → review, attaching ONLY
+                    // the proof fields (cannot self-assign a team or mark paid).
+                    || (isSignedIn()
+                        && resource.data.uid == request.auth.uid
+                        && resource.data.paymentStatus == 'pending'
+                        && request.resource.data.paymentStatus == 'review'
+                        && request.resource.data.diff(resource.data).affectedKeys()
+                             .hasOnly(['paymentStatus', 'proofUrl', 'proofSubmittedAt', 'paymentNote']));
 
       allow delete: if isAdmin()
                     || (isSignedIn()

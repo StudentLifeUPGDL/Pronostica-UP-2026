@@ -44,8 +44,15 @@ export interface GroupPick {
 // standalone side-league tournaments of the knockout (each its own league + prize pool).
 export type League = 'main' | 'r32' | 'r16';
 
-// Per-entry payment lifecycle, managed manually by the admin.
-export type PaymentStatus = 'pending' | 'paid' | 'void';
+// Per-entry payment lifecycle.
+//   pending → the user hasn't paid yet (pay button shown).
+//   review  → the user paid through the external app and uploaded a proof
+//             screenshot; "CONFIRMANDO PAGO" until the admin verifies it.
+//   paid    → the admin confirmed the proof against the received transfer.
+//   void    → cancelled (e.g. expired pending after the deadline).
+// pending → review is set by the owner (uploading proof); review → paid/void is
+// the admin's manual decision.
+export type PaymentStatus = 'pending' | 'review' | 'paid' | 'void';
 
 export interface Prediction {
   id: string;
@@ -70,6 +77,8 @@ export interface Prediction {
   paymentStatus: PaymentStatus;
   paidAt?: string;
   paymentNote?: string;
+  proofUrl?: string;                  // payment screenshot (Firebase Storage URL), set on review
+  proofSubmittedAt?: string;          // ISO — when the owner uploaded the proof
   points: number;                     // optional cache; standings are computed live from Results
 }
 
@@ -93,6 +102,8 @@ export interface Ticket {
   paymentStatus: PaymentStatus;
   paidAt?: string;            // ISO — set by admin when the transfer is confirmed
   paymentNote?: string;
+  proofUrl?: string;          // payment screenshot (Firebase Storage URL), set on review
+  proofSubmittedAt?: string;  // ISO — when the owner uploaded the proof
   poolId: string;             // '' until the cron bins it into a pool
   poolIndex?: number;         // cache of the pool's sequential number (display)
   teamId: string;             // '' until the pool is assigned

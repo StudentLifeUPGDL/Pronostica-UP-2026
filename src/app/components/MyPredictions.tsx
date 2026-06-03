@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Trophy, Trash2, Edit3, Star, ChevronRight, Lock, Swords, Copy, Check } from 'lucide-react';
+import { Plus, Trophy, Trash2, Edit3, Star, ChevronRight, Lock, Swords, Copy, Check, UploadCloud, Clock } from 'lucide-react';
 import { type Prediction, type Results, type PaymentStatus, getTeam } from '../data/worldcup';
 import { computeScore, leagueScore } from '../../lib/scoring';
 import { leagueLabel, paymentConfigured } from '../../lib/payment';
@@ -17,13 +17,29 @@ interface MyPredictionsProps {
   onEdit: (prediction: Prediction) => void;
   onDelete: (id: string) => void;
   onJoin: (round: 'r32' | 'r16') => void;
+  onConfirmPayment: () => void;
 }
 
 const STATUS_STYLE: Record<PaymentStatus, { label: string; color: string; bg: string }> = {
   pending: { label: 'PAGO PENDIENTE', color: '#f5a623', bg: 'rgba(245,166,35,0.12)' },
+  review: { label: 'CONFIRMANDO PAGO', color: '#60a5fa', bg: 'rgba(96,165,250,0.14)' },
   paid: { label: 'PAGADO', color: '#4ade80', bg: 'rgba(74,222,128,0.12)' },
   void: { label: 'ANULADO', color: '#e63946', bg: 'rgba(230,57,70,0.12)' },
 };
+
+// Below the folio: the pay link while pending, or a "comprobante en revisión" note
+// once the proof has been uploaded (review). Nothing once paid/void.
+function PaymentRow({ entry, email }: { entry: Prediction; email?: string }) {
+  if (entry.paymentStatus === 'review') {
+    return (
+      <span className="inline-flex items-center gap-1.5 rounded-lg"
+        style={{ background: 'rgba(96,165,250,0.1)', color: '#7cc0ff', border: '1px solid rgba(96,165,250,0.3)', fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", letterSpacing: '0.03em', fontSize: '0.72rem', padding: '4px 10px' }}>
+        <Clock size={12} /> Comprobante enviado · en revisión
+      </span>
+    );
+  }
+  return <PaymentCta prediction={entry} email={email} />;
+}
 
 function StatusBadge({ status }: { status: PaymentStatus }) {
   const s = STATUS_STYLE[status];
@@ -129,7 +145,7 @@ function SoloCard({ entry, results, email, joinOpen, onEdit, onDelete }: {
 
       <div className="px-5 pb-3 flex flex-col gap-2.5">
         <FolioRow id={entry.id} hint={entry.paymentStatus === 'pending'} />
-        {entry.paymentStatus !== 'paid' && <PaymentCta prediction={entry} email={email} />}
+        <PaymentRow entry={entry} email={email} />
       </div>
 
       <div className="px-5 py-3 flex items-center gap-2" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
@@ -189,7 +205,7 @@ function MainCard({ main, results, email, lockPassed, onEdit, onDelete }: {
 
       <div className="px-5 pb-3 flex flex-col gap-2.5">
         <FolioRow id={main.id} hint={main.paymentStatus === 'pending'} />
-        {main.paymentStatus !== 'paid' && <PaymentCta prediction={main} email={email} />}
+        <PaymentRow entry={main} email={email} />
       </div>
 
       {expanded && (
@@ -244,12 +260,14 @@ function MainCard({ main, results, email, lockPassed, onEdit, onDelete }: {
 export function MyPredictions({
   predictions, results, email, lockPassed,
   r32JoinOpen, r16JoinOpen, maxPending,
-  onNew, onEdit, onDelete, onJoin,
+  onNew, onEdit, onDelete, onJoin, onConfirmPayment,
 }: MyPredictionsProps) {
   const mains = predictions.filter(p => p.league === 'main');
   // Standalone side-league entries (R32 / R16 tournaments, independent of the main).
   const solos = predictions.filter(p => p.league !== 'main');
   const pendingCount = mains.filter(p => p.paymentStatus === 'pending').length;
+  // Any unpaid entry (main or side-league) → offer the "subir comprobante" shortcut.
+  const anyPending = predictions.some(p => p.paymentStatus === 'pending');
   // The pending cap only applies once payments are live (a payment link is set);
   // while it isn't, registration is unlimited.
   const capActive = paymentConfigured;
@@ -265,14 +283,24 @@ export function MyPredictions({
             {mains.length} pronóstico{mains.length !== 1 ? 's' : ''}{capActive ? ` · ${pendingCount}/${maxPending} con pago pendiente` : ''}
           </p>
         </div>
-        <button
-          onClick={onNew}
-          disabled={newDisabled}
-          title={lockPassed ? 'El torneo ya inició' : capActive && pendingCount >= maxPending ? `Máximo ${maxPending} pendientes` : ''}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl cursor-pointer transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-          style={{ background: '#f5a623', color: '#062b1a', fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", fontWeight: 700, fontSize: '0.85rem', letterSpacing: '0.05em' }}>
-          <Plus size={16} /> NUEVO PRONÓSTICO
-        </button>
+        <div className="flex flex-col gap-2 items-stretch sm:items-end">
+          <button
+            onClick={onNew}
+            disabled={newDisabled}
+            title={lockPassed ? 'El torneo ya inició' : capActive && pendingCount >= maxPending ? `Máximo ${maxPending} pendientes` : ''}
+            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl cursor-pointer transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+            style={{ background: '#f5a623', color: '#062b1a', fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", fontWeight: 700, fontSize: '0.85rem', letterSpacing: '0.05em' }}>
+            <Plus size={16} /> NUEVO PRONÓSTICO
+          </button>
+          {capActive && anyPending && (
+            <button
+              onClick={onConfirmPayment}
+              className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl cursor-pointer transition-all"
+              style={{ background: 'rgba(212,242,38,0.12)', color: '#d4f226', border: '1px solid rgba(212,242,38,0.35)', fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", fontWeight: 700, fontSize: '0.82rem', letterSpacing: '0.04em' }}>
+              <UploadCloud size={16} /> YA PAGUÉ · SUBIR COMPROBANTE
+            </button>
+          )}
+        </div>
       </div>
 
       {mains.length === 0 ? (

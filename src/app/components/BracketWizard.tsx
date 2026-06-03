@@ -961,7 +961,7 @@ export function BracketWizard({
 
   // ── Confirmation screen (shown after a successful save) ──
   if (saved) {
-    const showPayment = saved.pred.paymentStatus !== 'paid';
+    const payState = saved.pred.paymentStatus;
     return (
       <div className="max-w-2xl mx-auto px-4 py-10">
         <div className="rounded-2xl p-8 text-center" style={{ background: '#0d5035', border: '1px solid rgba(74,222,128,0.25)' }}>
@@ -987,16 +987,20 @@ export function BracketWizard({
             </div>
           </div>
 
-          {showPayment ? (
+          {payState === 'pending' ? (
             <>
               <p style={{ color: '#c0d8cc', fontSize: '0.84rem', marginTop: '18px', lineHeight: 1.6 }}>
-                Anota tu folio: lo necesitas para <strong style={{ color: '#d4f226' }}>confirmar tu pago</strong>. Ya viene
-                incluido en el formulario, pero guárdalo por si tienes que escribirlo a mano.
+                Anota tu folio: lo necesitas para <strong style={{ color: '#d4f226' }}>confirmar tu pago</strong>. Paga en la app
+                y luego sube tu comprobante desde <strong style={{ color: '#d4f226' }}>Mis Pronósticos</strong>.
               </p>
               <div className="mt-4 flex justify-center">
                 <PaymentCta prediction={saved.pred} email={userEmail} />
               </div>
             </>
+          ) : payState === 'review' ? (
+            <p style={{ color: '#c0d8cc', fontSize: '0.84rem', marginTop: '18px' }}>
+              Tu comprobante de pago está <strong style={{ color: '#7cc0ff' }}>en revisión</strong>. Tu folio queda como referencia.
+            </p>
           ) : (
             <p style={{ color: '#c0d8cc', fontSize: '0.84rem', marginTop: '18px' }}>
               Este pronóstico ya está pagado. Tu folio queda como referencia.

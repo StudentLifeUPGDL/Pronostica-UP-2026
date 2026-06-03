@@ -17,6 +17,7 @@ import { ResultsPage } from './components/ResultsPage';
 import { BracketWizard } from './components/BracketWizard';
 import { MyPredictions } from './components/MyPredictions';
 import { RifaPage } from './components/RifaPage';
+import { ConfirmPaymentModal } from './components/ConfirmPaymentModal';
 import { ExplanationsPage } from './components/ExplanationsPage';
 import { AdminReport } from './components/AdminReport';
 import { AdminRifa } from './components/AdminRifa';
@@ -71,6 +72,7 @@ export default function App() {
   const [wizard, setWizard] = useState<WizardState | null>(null);
   const [adminTab, setAdminTab] = useState<'report' | 'rifa' | 'results'>('report');
   const [actionError, setActionError] = useState('');
+  const [confirmPayOpen, setConfirmPayOpen] = useState(false);
 
   const uid = user?.uid ?? null;
 
@@ -256,6 +258,7 @@ export default function App() {
                 onEdit={handleEditPrediction}
                 onDelete={handleDeletePrediction}
                 onJoin={handleJoin}
+                onConfirmPayment={() => setConfirmPayOpen(true)}
               />
             )}
             {currentPage === 'rifa' && config.rifaEnabled && (
@@ -267,6 +270,7 @@ export default function App() {
                 email={user.email ?? undefined}
                 onBuy={handleBuyTicket}
                 onDelete={handleDeleteTicket}
+                onConfirmPayment={() => setConfirmPayOpen(true)}
               />
             )}
             {currentPage === 'explanations' && <ExplanationsPage config={config} />}
@@ -299,6 +303,17 @@ export default function App() {
           </>
         )}
       </main>
+
+      {confirmPayOpen && (
+        <ConfirmPaymentModal
+          open
+          onClose={() => setConfirmPayOpen(false)}
+          uid={user.uid}
+          predictions={predictions}
+          tickets={tickets}
+          onSubmitted={reloadData}
+        />
+      )}
 
       <footer style={{ borderTop: '1px solid rgba(255,255,255,0.06)', padding: '16px 24px', textAlign: 'center' }}>
         <div className="h-1 mb-3" style={{ background: 'repeating-linear-gradient(90deg, #f5a623 0px, #f5a623 8px, #d4f226 8px, #d4f226 16px, #0a3d28 16px, #0a3d28 24px)', borderRadius: '999px', maxWidth: '200px', margin: '0 auto 12px' }} />

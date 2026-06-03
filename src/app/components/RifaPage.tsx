@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import {
   Ticket as TicketIcon, Dice5, Trash2, Copy, Check, Loader2, Sparkles, Trophy, Coffee, ShieldCheck, CalendarClock,
+  UploadCloud, Clock,
 } from 'lucide-react';
 import {
   getTeam, POOL_CAPACITY,
@@ -23,10 +24,12 @@ interface RifaPageProps {
   email?: string;
   onBuy: () => Promise<void>;
   onDelete: (id: string) => Promise<void>;
+  onConfirmPayment: () => void;
 }
 
 const STATUS_STYLE: Record<PaymentStatus, { label: string; color: string; bg: string }> = {
   pending: { label: 'PAGO PENDIENTE', color: '#f5a623', bg: 'rgba(245,166,35,0.12)' },
+  review: { label: 'CONFIRMANDO PAGO', color: '#60a5fa', bg: 'rgba(96,165,250,0.14)' },
   paid: { label: 'PAGADO', color: '#4ade80', bg: 'rgba(74,222,128,0.12)' },
   void: { label: 'ANULADO', color: '#e63946', bg: 'rgba(230,57,70,0.12)' },
 };
@@ -116,6 +119,12 @@ function TicketCard({ ticket, results, email, onDelete }: {
       <div className="px-5 pb-4 flex items-center gap-2.5 flex-wrap" style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '12px' }}>
         <FolioChip id={ticket.id} />
         {ticket.paymentStatus === 'pending' && <PaymentLink ticketId={ticket.id} email={email} />}
+        {ticket.paymentStatus === 'review' && (
+          <span className="inline-flex items-center gap-1.5 rounded-lg"
+            style={{ background: 'rgba(96,165,250,0.1)', color: '#7cc0ff', border: '1px solid rgba(96,165,250,0.3)', fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", letterSpacing: '0.03em', fontSize: '0.72rem', padding: '4px 10px' }}>
+            <Clock size={12} /> Comprobante en revisión
+          </span>
+        )}
         <div className="flex-1" />
         {canDelete && (
           <button onClick={onDelete} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg cursor-pointer" style={{ background: 'rgba(230,57,70,0.08)', color: '#e63946', fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", fontSize: '0.72rem', letterSpacing: '0.05em', border: '1px solid rgba(230,57,70,0.15)' }}>
@@ -127,9 +136,10 @@ function TicketCard({ ticket, results, email, onDelete }: {
   );
 }
 
-export function RifaPage({ tickets, pools, config, results, email, onBuy, onDelete }: RifaPageProps) {
+export function RifaPage({ tickets, pools, config, results, email, onBuy, onDelete, onConfirmPayment }: RifaPageProps) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const anyPendingTicket = tickets.some(t => t.paymentStatus === 'pending');
 
   // The pool currently filling (status 'open'); if none yet, show a 0/48 placeholder.
   const openPool = [...pools].filter(p => p.status === 'open').sort((a, b) => b.index - a.index)[0];
@@ -287,9 +297,17 @@ export function RifaPage({ tickets, pools, config, results, email, onBuy, onDele
       )}
 
       {/* ── My tickets ── */}
-      <div className="flex items-center gap-2 mb-3">
+      <div className="flex items-center gap-2 mb-3 flex-wrap">
         <TicketIcon size={16} style={{ color: '#f5a623' }} />
         <h2 style={{ fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", color: '#f5a623', fontSize: '1.1rem', letterSpacing: '0.05em' }}>MIS BOLETOS ({tickets.length})</h2>
+        <div className="flex-1" />
+        {paymentConfigured && anyPendingTicket && (
+          <button onClick={onConfirmPayment}
+            className="flex items-center gap-2 px-3.5 py-2 rounded-xl cursor-pointer transition-all"
+            style={{ background: 'rgba(212,242,38,0.12)', color: '#d4f226', border: '1px solid rgba(212,242,38,0.35)', fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", fontWeight: 700, fontSize: '0.78rem', letterSpacing: '0.04em' }}>
+            <UploadCloud size={15} /> YA PAGUÉ · SUBIR COMPROBANTE
+          </button>
+        )}
       </div>
 
       {tickets.length === 0 ? (

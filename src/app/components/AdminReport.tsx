@@ -208,7 +208,7 @@ export function AdminReport({ config, results }: { config: AppConfig; results: R
           <table className="w-full" style={{ borderCollapse: 'collapse', fontFamily: "'Twemoji Country Flags', 'Nunito Sans'" }}>
             <thead>
               <tr style={{ color: '#4a7d65', fontFamily: "'Twemoji Country Flags', 'DM Mono'", fontSize: '0.62rem' }}>
-                {['FOLIO', 'LIGA', 'PRONÓSTICO', 'PARTICIPANTE', 'CUOTA', 'ESTADO'].map(h => (
+                {['FOLIO', 'LIGA', 'PRONÓSTICO', 'PARTICIPANTE', 'CUOTA', 'COMPROBANTE', 'ESTADO'].map(h => (
                   <th key={h} className="text-left px-3 py-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>{h}</th>
                 ))}
               </tr>
@@ -227,9 +227,15 @@ export function AdminReport({ config, results }: { config: AppConfig; results: R
                     </td>
                     <td className="px-3 py-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', color: '#9cc4b2', fontSize: '0.74rem', fontFamily: "'Twemoji Country Flags', 'DM Mono'" }}>{money(feeFor(p.league), config.currency)}</td>
                     <td className="px-3 py-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                      {p.proofUrl
+                        ? <a href={p.proofUrl} target="_blank" rel="noopener noreferrer" style={{ color: '#60a5fa', fontFamily: "'Twemoji Country Flags', 'DM Mono'", fontSize: '0.72rem', textDecoration: 'underline' }}>ver</a>
+                        : <span style={{ color: '#4a7d65', fontSize: '0.72rem' }}>—</span>}
+                    </td>
+                    <td className="px-3 py-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
                       <select value={p.paymentStatus} disabled={busy} onChange={e => changeStatus(p.id, e.target.value as PaymentStatus)}
                         style={{ background: '#0b4730', color: '#e0f0e8', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', padding: '4px 8px', fontFamily: "'Twemoji Country Flags', 'DM Mono'", fontSize: '0.72rem' }}>
                         <option value="pending">pendiente</option>
+                        <option value="review">en revisión</option>
                         <option value="paid">pagado</option>
                         <option value="void">anulada</option>
                       </select>
