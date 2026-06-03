@@ -23,7 +23,7 @@
 //   GMAIL_USER                the Gmail address that sends the emails (also the From).
 //   GMAIL_APP_PASSWORD        a Google "App Password" (NOT your normal password) —
 //                             requires 2-Step Verification enabled on that account.
-//   GMAIL_FROM_NAME           optional display name (default 'Pronostica Pantera').
+//   GMAIL_FROM_NAME           optional display name (default 'Pantera Mundialista').
 //   APP_URL                   optional — link shown in the email (e.g. https://tu-app.vercel.app).
 
 import { readFileSync } from 'node:fs';
@@ -106,7 +106,7 @@ async function getTransporter() {
 async function sendAssignmentEmail(ticket) {
   if (!ticket.userEmail) return false;
   const transporter = await getTransporter();
-  const fromName = process.env.GMAIL_FROM_NAME || 'Pronostica Pantera';
+  const fromName = process.env.GMAIL_FROM_NAME || 'Pantera Mundialista';
   const from = `${fromName} <${process.env.GMAIL_USER}>`;
 
   const t = TEAM_INFO[ticket.teamId] ?? { name: ticket.teamId, flag: '⚽' };
@@ -115,14 +115,14 @@ async function sendAssignmentEmail(ticket) {
     <div style="font-family:Arial,Helvetica,sans-serif;max-width:480px;margin:auto;background:#0a3d28;color:#e0f0e8;border-radius:14px;overflow:hidden">
       <div style="height:6px;background:repeating-linear-gradient(90deg,#f5a623 0 8px,#d4f226 8px 16px,#0a3d28 16px 24px)"></div>
       <div style="padding:28px 24px;text-align:center">
-        <div style="font-size:13px;letter-spacing:2px;color:#7eb89a">PRONOSTICA PANTERA · RIFA DE PAÍSES</div>
+        <div style="font-size:13px;letter-spacing:2px;color:#7eb89a">PANTERA MUNDIALISTA · QUINIELA</div>
         <h1 style="color:#f5a623;font-size:22px;margin:14px 0 6px">¡Ya tienes selección!</h1>
         <p style="color:#9cc4b2;font-size:14px;margin:0 0 20px">Tu pool (#${ticket.poolIndex}) se llenó y el sorteo te asignó:</p>
         <div style="font-size:56px;line-height:1">${t.flag}</div>
         <div style="font-family:Arial;font-size:24px;font-weight:bold;color:#d4f226;margin:8px 0 18px">${t.name}</div>
         <div style="font-size:12px;color:#7eb89a">Folio del boleto: <b style="color:#e0f0e8">${ticket.id}</b></div>
         ${appUrl ? `<a href="${appUrl}" style="display:inline-block;margin-top:22px;background:#f5a623;color:#062b1a;text-decoration:none;font-weight:bold;padding:12px 22px;border-radius:10px;font-size:14px">VER MIS BOLETOS</a>` : ''}
-        <p style="color:#4a7d65;font-size:11px;margin-top:24px">Mundial FIFA 2026 · Si tu equipo llega al podio, ganas parte del bote.</p>
+        <p style="color:#4a7d65;font-size:11px;margin-top:24px">Mundial FIFA 2026 · Mientras más lejos llegue tu país, mejor premio (1°–4° en efectivo; 5°–16° vale Nessu).</p>
       </div>
     </div>`;
 

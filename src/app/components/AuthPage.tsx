@@ -24,7 +24,7 @@ const inputStyle = {
   background: '#0b4730',
   border: '1px solid rgba(245,166,35,0.3)',
   color: '#f0f7f2',
-  fontFamily: 'Nunito Sans, sans-serif',
+  fontFamily: "'Twemoji Country Flags', 'Nunito Sans', sans-serif",
   fontSize: '0.95rem',
 } as const;
 
@@ -66,7 +66,7 @@ export function AuthPage() {
         if (displayName.trim().length < 2) { setError('Ingresa tu nombre.'); setBusy(false); return; }
         if (password.length < 6) { setError('La contraseña debe tener al menos 6 caracteres.'); setBusy(false); return; }
         await signUp(email, password, displayName);
-        setSuccess('¡Cuenta creada! Ya puedes crear tus quinielas.');
+        setSuccess('¡Cuenta creada! Ya puedes crear tus pronósticos.');
       } else {
         await resetPassword(email);
         setSuccess('Te enviamos un enlace para restablecer tu contraseña.');
@@ -92,9 +92,9 @@ export function AuthPage() {
           <div className="inline-flex items-center justify-center w-20 h-20 rounded-full mb-4 shadow-xl" style={{ background: 'linear-gradient(135deg, #f5a623, #e8890f)' }}>
             <Trophy size={36} style={{ color: '#062b1a' }} />
           </div>
-          <h1 style={{ fontFamily: 'Oswald, sans-serif', color: '#f5a623', fontSize: '2.4rem', fontWeight: 700, letterSpacing: '0.05em', lineHeight: 1 }}>PRONOSTICA PANTERA</h1>
-          <p style={{ fontFamily: 'Oswald, sans-serif', color: '#7eb89a', fontSize: '1rem', letterSpacing: '0.2em' }}>MUNDIAL FIFA 2026</p>
-          <p style={{ fontFamily: 'Oswald, sans-serif', color: '#d4f226', fontSize: '0.8rem', letterSpacing: '0.18em', marginTop: '6px' }}>UNIVERSIDAD PANAMERICANA</p>
+          <h1 style={{ fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", color: '#f5a623', fontSize: '2.4rem', fontWeight: 700, letterSpacing: '0.05em', lineHeight: 1 }}>PANTERA MUNDIALISTA</h1>
+          <p style={{ fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", color: '#7eb89a', fontSize: '1rem', letterSpacing: '0.2em' }}>MUNDIAL FIFA 2026</p>
+          <p style={{ fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", color: '#d4f226', fontSize: '0.8rem', letterSpacing: '0.18em', marginTop: '6px' }}>UNIVERSIDAD PANAMERICANA</p>
           <p style={{ color: '#9cc4b2', fontSize: '0.85rem', marginTop: '8px' }}>Estados Unidos · Canadá · México</p>
         </div>
 
@@ -105,7 +105,7 @@ export function AuthPage() {
                 <button key={t.key} onClick={() => switchTab(t.key)}
                   className="flex-1 py-2 rounded-md cursor-pointer transition-all"
                   style={{
-                    fontFamily: 'Oswald, sans-serif', fontSize: '0.85rem', letterSpacing: '0.05em',
+                    fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", fontSize: '0.85rem', letterSpacing: '0.05em',
                     background: tab === t.key ? '#f5a623' : 'transparent',
                     color: tab === t.key ? '#062b1a' : '#9cc4b2',
                     fontWeight: 700,
@@ -119,7 +119,7 @@ export function AuthPage() {
           {tab === 'reset' && (
             <div className="flex items-center gap-2 mb-4">
               <Lock size={16} style={{ color: '#f5a623' }} />
-              <span style={{ fontFamily: 'Oswald, sans-serif', color: '#f5a623', fontSize: '1rem', letterSpacing: '0.05em' }}>RECUPERAR CONTRASEÑA</span>
+              <span style={{ fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", color: '#f5a623', fontSize: '1rem', letterSpacing: '0.05em' }}>RECUPERAR CONTRASEÑA</span>
             </div>
           )}
 
@@ -154,12 +154,12 @@ export function AuthPage() {
 
           <button onClick={handleSubmit} disabled={busy}
             className="w-full py-3 rounded-lg flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50"
-            style={{ background: 'linear-gradient(135deg, #f5a623, #e8890f)', color: '#062b1a', fontFamily: 'Oswald, sans-serif', fontSize: '1rem', fontWeight: 700, letterSpacing: '0.08em' }}>
+            style={{ background: 'linear-gradient(135deg, #f5a623, #e8890f)', color: '#062b1a', fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", fontSize: '1rem', fontWeight: 700, letterSpacing: '0.08em' }}>
             {busy ? 'PROCESANDO…' : tab === 'login' ? 'ENTRAR' : tab === 'signup' ? 'CREAR CUENTA' : 'ENVIAR ENLACE'}
             {!busy && <ChevronRight size={18} />}
           </button>
 
-          <div className="mt-4 text-center text-xs" style={{ color: '#7eb89a', fontFamily: 'Nunito Sans' }}>
+          <div className="mt-4 text-center text-xs" style={{ color: '#7eb89a', fontFamily: "'Twemoji Country Flags', 'Nunito Sans'" }}>
             {tab === 'login' && (
               <button onClick={() => switchTab('reset')} className="cursor-pointer" style={{ color: '#9cc4b2', textDecoration: 'underline' }}>
                 ¿Olvidaste tu contraseña?

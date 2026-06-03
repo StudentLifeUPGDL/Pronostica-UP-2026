@@ -150,9 +150,42 @@ export const EMPTY_RESULTS: Results = {
   champion: '', runnerUp: '', thirdPlace: '',
 };
 
+// ─── Public aggregate stats (paid counts → live bote, no personal data) ─────────
+// Maintained by admin actions (payment confirmations) and world-readable so the
+// home page can show the growing prize without exposing individual entries.
+export interface PublicStats {
+  mainPaid: number;   // paid 'main' predictions
+  r32Paid: number;    // paid 'r32' predictions
+  r16Paid: number;    // paid 'r16' predictions
+  rifaPaid: number;   // paid rifa tickets
+  updatedAt?: string;
+}
+
+export const EMPTY_PUBLIC_STATS: PublicStats = { mainPaid: 0, r32Paid: 0, r16Paid: 0, rifaPaid: 0 };
+
+// Below this published bote, the home page shows a teaser ("participa por grandes
+// premios") instead of a small number; at/above it, the live amount is revealed.
+export const BIG_PRIZE_THRESHOLD = 1000;
+
 // ─── App configuration (admin-editable, lives in config/app) ──────────────────
 
 export interface AppFees { main: number; r32: number; r16: number; }
+
+// Rifa de Países — FIXED prizes funded by the organizer (la UP cubre la diferencia).
+// Ranking is by how far each ticket's assigned country goes in the World Cup:
+//   1°=campeón, 2°=subcampeón, 3°=tercer lugar, 4°=cuarto lugar → premio en efectivo;
+//   5°–16° (eliminados en cuartos y octavos) → vale de café para el Nessu.
+export interface RifaPrizes {
+  first: number;       // 1° (campeón)
+  second: number;      // 2° (subcampeón)
+  third: number;       // 3° (tercer lugar)
+  fourth: number;      // 4° (cuarto lugar)
+  consolation: number; // vale Nessu para los lugares 5°–16°
+}
+
+export const DEFAULT_RIFA_PRIZES: RifaPrizes = {
+  first: 5000, second: 3000, third: 800, fourth: 800, consolation: 100,
+};
 
 export interface AppConfig {
   lockDate: string;          // ISO — MAIN entries lock (kickoff)
@@ -164,11 +197,12 @@ export interface AppConfig {
   maxPendingPerUser: number;
   currency: string;
   fees: AppFees;
-  payoutPercent: number;     // share of the gross pool that is paid out (e.g. 0.90)
-  payoutRoundTo: number;     // distributable prize rounded DOWN to this (e.g. 100)
+  payoutPercent: number;     // PUBLISHED share of each variant's bote (winner-takes-all, e.g. 0.80)
+  payoutRoundTo: number;     // displayed prize rounded DOWN to this (e.g. 100)
   rifaEnabled: boolean;      // show/hide the "Rifa de Países" mode
   rifaFee: number;           // price per rifa ticket
-  rifaPayoutSplit: number[]; // how each pool's prize splits: [campeón, subcampeón, 3°]
+  rifaPayoutSplit: number[]; // legacy snapshot kept on pools by the cron (no longer used for display)
+  rifaPrizes: RifaPrizes;    // fixed prize ladder for the Rifa de Países
 }
 
 export const DEFAULT_CONFIG: AppConfig = {
@@ -181,11 +215,12 @@ export const DEFAULT_CONFIG: AppConfig = {
   maxPendingPerUser: 5,
   currency: 'MXN',
   fees: { main: 100, r32: 200, r16: 300 },
-  payoutPercent: 0.9,
+  payoutPercent: 0.8,
   payoutRoundTo: 100,
   rifaEnabled: true,
-  rifaFee: 50,
+  rifaFee: 200,
   rifaPayoutSplit: [0.7, 0.2, 0.1],
+  rifaPrizes: DEFAULT_RIFA_PRIZES,
 };
 
 // ─── Teams ────────────────────────────────────────────────────────────────────

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
-  type Prediction, type AppConfig, type Results, type Ticket, type Pool,
-  DEFAULT_CONFIG, EMPTY_RESULTS,
+  type Prediction, type AppConfig, type Results, type Ticket, type Pool, type PublicStats,
+  DEFAULT_CONFIG, EMPTY_RESULTS, EMPTY_PUBLIC_STATS,
 } from './data/worldcup';
 import { useAuth } from '../lib/auth';
 import {
@@ -9,6 +9,7 @@ import {
   saveMainPrediction, saveSideEntry, deletePrediction,
 } from '../lib/predictions';
 import { fetchMyTickets, fetchPools, buyTicket, deleteTicket } from '../lib/rifa';
+import { fetchPublicStats } from '../lib/stats';
 import { AuthPage } from './components/AuthPage';
 import { Header } from './components/Header';
 import { HomePage } from './components/HomePage';
@@ -33,7 +34,7 @@ interface WizardState {
 function Shell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-4 text-center"
-      style={{ background: '#0a3d28', fontFamily: 'Nunito Sans, sans-serif' }}>
+      style={{ background: '#0a3d28', fontFamily: "'Twemoji Country Flags', Nunito Sans, sans-serif" }}>
       {children}
     </div>
   );
@@ -43,7 +44,7 @@ function FirebaseSetupNotice() {
   return (
     <Shell>
       <div className="max-w-lg">
-        <h1 style={{ fontFamily: 'Oswald, sans-serif', color: '#f5a623', fontSize: '1.6rem', letterSpacing: '0.04em' }}>
+        <h1 style={{ fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", color: '#f5a623', fontSize: '1.6rem', letterSpacing: '0.04em' }}>
           FALTA CONFIGURAR FIREBASE
         </h1>
         <p style={{ color: '#c0d8cc', fontSize: '0.9rem', marginTop: '12px', lineHeight: 1.6 }}>
@@ -66,6 +67,7 @@ export default function App() {
   const [pools, setPools] = useState<Pool[]>([]);
   const [config, setConfig] = useState<AppConfig>(DEFAULT_CONFIG);
   const [results, setResults] = useState<Results>(EMPTY_RESULTS);
+  const [stats, setStats] = useState<PublicStats>(EMPTY_PUBLIC_STATS);
   const [wizard, setWizard] = useState<WizardState | null>(null);
   const [adminTab, setAdminTab] = useState<'report' | 'rifa' | 'results'>('report');
   const [actionError, setActionError] = useState('');
@@ -75,10 +77,11 @@ export default function App() {
   const reloadData = useCallback(async () => {
     if (!uid) return;
     try {
-      const [preds, cfg, res] = await Promise.all([fetchMyPredictions(uid), fetchConfig(), fetchResults()]);
+      const [preds, cfg, res, st] = await Promise.all([fetchMyPredictions(uid), fetchConfig(), fetchResults(), fetchPublicStats()]);
       setPredictions(preds);
       setConfig(cfg);
       setResults(res);
+      setStats(st);
     } catch (e) {
       console.error('Error cargando datos', e);
     }
@@ -115,9 +118,9 @@ export default function App() {
   }
 
   function handleNewPrediction() {
-    if (lockPassed) { setActionError('El torneo ya inició: no se pueden crear nuevas quinielas.'); return; }
+    if (lockPassed) { setActionError('El torneo ya inició: no se pueden crear nuevos pronósticos.'); return; }
     const n = predictions.filter(p => p.league === 'main').length + 1;
-    setWizard({ mode: 'main', base: null, name: `Mi Quiniela #${n}` });
+    setWizard({ mode: 'main', base: null, name: `Mi Pronóstico #${n}` });
     setCurrentPage('bracket');
   }
 
@@ -141,7 +144,7 @@ export default function App() {
     setWizard({
       mode: round === 'r32' ? 'joinR32' : 'joinR16',
       base: null,
-      name: round === 'r32' ? 'Mi Quiniela R32 · Liga aparte' : 'Mi Quiniela R16 · Liga aparte',
+      name: round === 'r32' ? 'Mi Pronóstico R32 · Liga aparte' : 'Mi Pronóstico R16 · Liga aparte',
     });
     setCurrentPage('bracket');
   }
@@ -186,7 +189,7 @@ export default function App() {
   if (loading) {
     return (
       <Shell>
-        <div style={{ fontFamily: 'Oswald, sans-serif', color: '#7eb89a', letterSpacing: '0.1em' }}>CARGANDO…</div>
+        <div style={{ fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", color: '#7eb89a', letterSpacing: '0.1em' }}>CARGANDO…</div>
       </Shell>
     );
   }
@@ -196,7 +199,7 @@ export default function App() {
   const showAdmin = isAdmin && currentPage === 'admin';
 
   return (
-    <div className="min-h-screen" style={{ background: '#0a3d28', fontFamily: 'Nunito Sans, sans-serif' }}>
+    <div className="min-h-screen" style={{ background: '#0a3d28', fontFamily: "'Twemoji Country Flags', Nunito Sans, sans-serif" }}>
       <Header
         currentPage={currentPage}
         onNavigate={handleNavigate}
@@ -236,6 +239,7 @@ export default function App() {
                 predictions={predictions}
                 results={results}
                 config={config}
+                stats={stats}
               />
             )}
             {currentPage === 'results' && <ResultsPage results={results} />}
@@ -269,11 +273,11 @@ export default function App() {
             {showAdmin && (
               <div className="max-w-6xl mx-auto px-4 py-6">
                 <div className="flex gap-2 mb-5">
-                  {([['report', 'Reporte general'], ['rifa', 'Rifa de Países'], ['results', 'Resultados / Config']] as const).map(([key, label]) => (
+                  {([['report', 'Reporte general'], ['rifa', 'Quiniela'], ['results', 'Resultados / Config']] as const).map(([key, label]) => (
                     <button key={key} onClick={() => setAdminTab(key)}
                       className="px-4 py-2 rounded-lg cursor-pointer"
                       style={{
-                        fontFamily: 'Oswald, sans-serif', fontSize: '0.82rem', letterSpacing: '0.05em',
+                        fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", fontSize: '0.82rem', letterSpacing: '0.05em',
                         background: adminTab === key ? '#f5a623' : '#0d5035',
                         color: adminTab === key ? '#062b1a' : '#9cc4b2',
                         border: '1px solid rgba(245,166,35,0.2)',
@@ -298,8 +302,8 @@ export default function App() {
 
       <footer style={{ borderTop: '1px solid rgba(255,255,255,0.06)', padding: '16px 24px', textAlign: 'center' }}>
         <div className="h-1 mb-3" style={{ background: 'repeating-linear-gradient(90deg, #f5a623 0px, #f5a623 8px, #d4f226 8px, #d4f226 16px, #0a3d28 16px, #0a3d28 24px)', borderRadius: '999px', maxWidth: '200px', margin: '0 auto 12px' }} />
-        <p style={{ color: '#3a6b55', fontSize: '0.72rem', fontFamily: 'DM Mono, monospace', letterSpacing: '0.08em' }}>
-          PRONOSTICA PANTERA · UNIVERSIDAD PANAMERICANA · MUNDIAL FIFA 2026 · EE.UU. · CANADÁ · MÉXICO
+        <p style={{ color: '#3a6b55', fontSize: '0.72rem', fontFamily: "'Twemoji Country Flags', 'DM Mono', monospace", letterSpacing: '0.08em' }}>
+          PANTERA MUNDIALISTA · UNIVERSIDAD PANAMERICANA · MUNDIAL FIFA 2026 · EE.UU. · CANADÁ · MÉXICO
         </p>
       </footer>
     </div>

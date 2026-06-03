@@ -19,8 +19,8 @@ function localToIso(v: string): string {
   return isNaN(d.getTime()) ? '' : d.toISOString();
 }
 
-const labelStyle = { fontFamily: 'Oswald, sans-serif', color: '#7eb89a', fontSize: '0.72rem', letterSpacing: '0.06em' } as const;
-const inputStyle = { background: '#0b4730', border: '1px solid rgba(255,255,255,0.1)', color: '#e0f0e8', borderRadius: '8px', padding: '8px 10px', fontFamily: 'Nunito Sans', fontSize: '0.85rem', width: '100%' } as const;
+const labelStyle = { fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", color: '#7eb89a', fontSize: '0.72rem', letterSpacing: '0.06em' } as const;
+const inputStyle = { background: '#0b4730', border: '1px solid rgba(255,255,255,0.1)', color: '#e0f0e8', borderRadius: '8px', padding: '8px 10px', fontFamily: "'Twemoji Country Flags', 'Nunito Sans'", fontSize: '0.85rem', width: '100%' } as const;
 
 function SingleTeam({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   return (
@@ -40,7 +40,7 @@ function MultiTeam({ label, expected, value, onChange }: {
     <div className="rounded-xl p-4" style={{ background: '#0b4730', border: '1px solid rgba(255,255,255,0.07)' }}>
       <div className="flex items-center justify-between mb-2">
         <span style={labelStyle}>{label}</span>
-        <span style={{ fontFamily: 'DM Mono', fontSize: '0.7rem', color: ok ? '#4ade80' : '#f5a623' }}>{value.length}/{expected}</span>
+        <span style={{ fontFamily: "'Twemoji Country Flags', 'DM Mono'", fontSize: '0.7rem', color: ok ? '#4ade80' : '#f5a623' }}>{value.length}/{expected}</span>
       </div>
       <div className="flex flex-wrap gap-1.5 mb-2">
         {value.map(id => {
@@ -48,7 +48,7 @@ function MultiTeam({ label, expected, value, onChange }: {
           return (
             <span key={id} className="flex items-center gap-1 px-2 py-1 rounded-lg" style={{ background: 'rgba(245,166,35,0.12)', border: '1px solid rgba(245,166,35,0.25)' }}>
               <span style={{ fontSize: '0.8rem' }}>{t.flag}</span>
-              <span style={{ fontSize: '0.72rem', color: '#f5a623', fontFamily: 'Nunito Sans' }}>{t.shortName}</span>
+              <span style={{ fontSize: '0.72rem', color: '#f5a623', fontFamily: "'Twemoji Country Flags', 'Nunito Sans'" }}>{t.shortName}</span>
               <button onClick={() => onChange(value.filter(x => x !== id))} className="cursor-pointer" style={{ color: '#a07020' }}><X size={11} /></button>
             </span>
           );
@@ -99,11 +99,11 @@ export function AdminResultsEntry({ config, onSaved }: { config: AppConfig; onSa
       <section className="rounded-xl p-5" style={{ background: '#0d5035', border: '1px solid rgba(255,255,255,0.07)' }}>
         <div className="flex items-center gap-2 mb-4">
           <Settings size={16} style={{ color: '#f5a623' }} />
-          <span style={{ fontFamily: 'Oswald, sans-serif', color: '#f5a623', fontSize: '1rem', letterSpacing: '0.05em' }}>CONFIGURACIÓN</span>
+          <span style={{ fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", color: '#f5a623', fontSize: '1rem', letterSpacing: '0.05em' }}>CONFIGURACIÓN</span>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {([
-            ['lockDate', 'Cierre quiniela principal (kickoff)'],
+            ['lockDate', 'Cierre de pronósticos (kickoff)'],
             ['paymentDeadline', 'Fecha límite de pago (anula pendientes)'],
             ['r32StartDate', 'Inicio R32 (cierra Liga R32)'],
             ['r16StartDate', 'Inicio R16 (cierra Liga R16)'],
@@ -126,7 +126,7 @@ export function AdminResultsEntry({ config, onSaved }: { config: AppConfig; onSa
             </label>
           ))}
           <label className="flex flex-col gap-1">
-            <span style={labelStyle}>% del bote que se reparte (0–1)</span>
+            <span style={labelStyle}>% del bote publicado al ganador (Pronostica Pantera, 0–1)</span>
             <input type="number" min={0} max={1} step={0.05} value={cfg.payoutPercent}
               onChange={e => setCfg({ ...cfg, payoutPercent: Number(e.target.value) })} style={inputStyle} />
           </label>
@@ -136,7 +136,7 @@ export function AdminResultsEntry({ config, onSaved }: { config: AppConfig; onSa
               onChange={e => setCfg({ ...cfg, payoutRoundTo: Number(e.target.value) })} style={inputStyle} />
           </label>
           <label className="flex flex-col gap-1">
-            <span style={labelStyle}>Máx. quinielas con pago pendiente</span>
+            <span style={labelStyle}>Máx. pronósticos con pago pendiente</span>
             <input type="number" min={1} value={cfg.maxPendingPerUser}
               onChange={e => setCfg({ ...cfg, maxPendingPerUser: Number(e.target.value) })} style={inputStyle} />
           </label>
@@ -148,36 +148,40 @@ export function AdminResultsEntry({ config, onSaved }: { config: AppConfig; onSa
 
         {/* ── Rifa de Países ── */}
         <div className="mt-5 pt-4" style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
-          <div style={{ ...labelStyle, color: '#f5a623', marginBottom: '10px' }}>RIFA DE PAÍSES (MODO TRADICIONAL)</div>
+          <div style={{ ...labelStyle, color: '#f5a623', marginBottom: '10px' }}>QUINIELA (MODO TRADICIONAL)</div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <label className="flex items-center gap-2 sm:col-span-2">
               <input type="checkbox" checked={cfg.rifaEnabled} onChange={e => setCfg({ ...cfg, rifaEnabled: e.target.checked })} style={{ width: 16, height: 16, accentColor: '#f5a623' }} />
-              <span style={labelStyle}>Habilitar el modo Rifa de Países</span>
+              <span style={labelStyle}>Habilitar el modo Quiniela</span>
             </label>
             <label className="flex flex-col gap-1">
               <span style={labelStyle}>Precio por boleto ({cfg.currency})</span>
               <input type="number" min={0} value={cfg.rifaFee}
                 onChange={e => setCfg({ ...cfg, rifaFee: Number(e.target.value) })} style={inputStyle} />
             </label>
-            <div className="flex flex-col gap-1">
-              <span style={labelStyle}>Reparto del bote (campeón / subcampeón / 3°, 0–1)</span>
-              <div className="flex gap-2">
-                {([0, 1, 2] as const).map(i => (
-                  <input key={i} type="number" min={0} max={1} step={0.05}
-                    value={cfg.rifaPayoutSplit[i] ?? 0}
-                    onChange={e => {
-                      const next = [...cfg.rifaPayoutSplit];
-                      next[i] = Number(e.target.value);
-                      setCfg({ ...cfg, rifaPayoutSplit: next });
-                    }}
-                    style={inputStyle} />
+            <div className="sm:col-span-2">
+              <span style={labelStyle}>Premios fijos por lugar ({cfg.currency}) — según qué tan lejos llegue el país</span>
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 mt-1">
+                {([
+                  ['first', '1° Campeón'],
+                  ['second', '2° Subcampeón'],
+                  ['third', '3° 3er lugar'],
+                  ['fourth', '4° 4° lugar'],
+                  ['consolation', 'Vale 5°–16°'],
+                ] as const).map(([key, label]) => (
+                  <label key={key} className="flex flex-col gap-1">
+                    <span style={{ ...labelStyle, fontSize: '0.62rem' }}>{label}</span>
+                    <input type="number" min={0} value={cfg.rifaPrizes[key]}
+                      onChange={e => setCfg({ ...cfg, rifaPrizes: { ...cfg.rifaPrizes, [key]: Number(e.target.value) } })}
+                      style={inputStyle} />
+                  </label>
                 ))}
               </div>
             </div>
           </div>
         </div>
         <button onClick={handleSaveConfig} disabled={busy} className="mt-4 flex items-center gap-2 px-4 py-2.5 rounded-lg cursor-pointer disabled:opacity-50"
-          style={{ background: '#f5a623', color: '#062b1a', fontFamily: 'Oswald, sans-serif', fontWeight: 700, fontSize: '0.82rem', letterSpacing: '0.05em' }}>
+          style={{ background: '#f5a623', color: '#062b1a', fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", fontWeight: 700, fontSize: '0.82rem', letterSpacing: '0.05em' }}>
           <Save size={14} /> GUARDAR CONFIGURACIÓN
         </button>
       </section>
@@ -186,7 +190,7 @@ export function AdminResultsEntry({ config, onSaved }: { config: AppConfig; onSa
       <section className="rounded-xl p-5" style={{ background: '#0d5035', border: '1px solid rgba(255,255,255,0.07)' }}>
         <div className="flex items-center gap-2 mb-2">
           <ListChecks size={16} style={{ color: '#f5a623' }} />
-          <span style={{ fontFamily: 'Oswald, sans-serif', color: '#f5a623', fontSize: '1rem', letterSpacing: '0.05em' }}>RESULTADOS REALES</span>
+          <span style={{ fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", color: '#f5a623', fontSize: '1rem', letterSpacing: '0.05em' }}>RESULTADOS REALES</span>
         </div>
         <p style={{ color: '#7eb89a', fontSize: '0.78rem', marginBottom: '14px' }}>
           Captura los resultados conforme avanza el torneo. Los puntajes se calculan en vivo a partir de aquí.
@@ -198,10 +202,10 @@ export function AdminResultsEntry({ config, onSaved }: { config: AppConfig; onSa
             const gr = results.groups[g.id] ?? { first: '', second: '', third: '' };
             return (
               <div key={g.id} className="rounded-xl p-3" style={{ background: '#0b4730', border: '1px solid rgba(255,255,255,0.07)' }}>
-                <div style={{ fontFamily: 'Oswald, sans-serif', color: '#f5a623', fontSize: '0.8rem', letterSpacing: '0.08em', marginBottom: '8px' }}>GRUPO {g.id}</div>
+                <div style={{ fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", color: '#f5a623', fontSize: '0.8rem', letterSpacing: '0.08em', marginBottom: '8px' }}>GRUPO {g.id}</div>
                 {(['first', 'second', 'third'] as const).map((pos, i) => (
                   <div key={pos} className="flex items-center gap-2 mb-1.5">
-                    <span style={{ fontFamily: 'DM Mono', color: ['#f5a623', '#d4f226', '#9cc4b2'][i], fontSize: '0.7rem', minWidth: '18px' }}>{i + 1}°</span>
+                    <span style={{ fontFamily: "'Twemoji Country Flags', 'DM Mono'", color: ['#f5a623', '#d4f226', '#9cc4b2'][i], fontSize: '0.7rem', minWidth: '18px' }}>{i + 1}°</span>
                     <select value={gr[pos]} onChange={e => setGroup(g.id, { [pos]: e.target.value })} style={inputStyle}>
                       <option value="">—</option>
                       {g.teams.map(t => <option key={t.id} value={t.id}>{t.flag} {t.name}</option>)}
@@ -234,7 +238,7 @@ export function AdminResultsEntry({ config, onSaved }: { config: AppConfig; onSa
         </div>
 
         <button onClick={handleSaveResults} disabled={busy} className="flex items-center gap-2 px-4 py-2.5 rounded-lg cursor-pointer disabled:opacity-50"
-          style={{ background: 'rgba(74,222,128,0.15)', color: '#4ade80', fontFamily: 'Oswald, sans-serif', fontWeight: 700, fontSize: '0.82rem', letterSpacing: '0.05em', border: '1px solid rgba(74,222,128,0.3)' }}>
+          style={{ background: 'rgba(74,222,128,0.15)', color: '#4ade80', fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", fontWeight: 700, fontSize: '0.82rem', letterSpacing: '0.05em', border: '1px solid rgba(74,222,128,0.3)' }}>
           <Check size={14} /> GUARDAR RESULTADOS
         </button>
       </section>

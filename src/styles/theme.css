@@ -124,13 +124,16 @@
     @apply border-border outline-ring/50;
   }
 
+  /* 'Twemoji Country Flags' (injected by polyfillCountryFlagEmojis in main.tsx)
+     contains only flag glyphs, so listing it first renders flags consistently
+     while every other character falls through to the normal font. */
   body {
     @apply bg-background text-foreground;
-    font-family: 'Nunito Sans', sans-serif;
+    font-family: 'Twemoji Country Flags', 'Nunito Sans', sans-serif;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Oswald', sans-serif;
+    font-family: 'Twemoji Country Flags', 'Oswald', sans-serif;
   }
 
   /**

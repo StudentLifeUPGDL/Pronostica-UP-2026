@@ -4,6 +4,8 @@ import {
 } from 'firebase/firestore';
 import type { User } from 'firebase/auth';
 import { db, firebaseConfigured } from './firebase';
+import { recomputePublicStats } from './stats';
+import { paymentConfigured } from './payment';
 import {
   DEFAULT_CONFIG, EMPTY_RESULTS,
   type AppConfig, type Prediction, type PaymentStatus, type Results,
@@ -82,14 +84,17 @@ export async function fetchAllPredictions(): Promise<Prediction[]> {
 
 // Create or update a MAIN entry. On create, enforces the per-user pending cap
 // (client-side; not a security boundary). The lock window is enforced by rules.
+// While no payment link is configured, payments aren't live yet, so the cap is
+// skipped and registration is unlimited; it re-engages automatically once the
+// payment form/link is set (VITE_PAYMENT_FORM_BASE_URL).
 export async function saveMainPrediction(pred: Prediction, isNew: boolean): Promise<void> {
-  if (isNew) {
+  if (isNew && paymentConfigured) {
     const [mine, cfg] = await Promise.all([fetchMyPredictions(pred.uid), fetchConfig()]);
     const pending = mine.filter(p => p.league === 'main' && p.paymentStatus === 'pending').length;
     if (pending >= cfg.maxPendingPerUser) {
       throw new Error(
-        `Tienes ${pending} quiniela(s) con pago pendiente (máximo ${cfg.maxPendingPerUser}). ` +
-        `Espera a que se confirme un pago antes de crear otra.`,
+        `Tienes ${pending} pronóstico(s) con pago pendiente (máximo ${cfg.maxPendingPerUser}). ` +
+        `Espera a que se confirme un pago antes de crear otro.`,
       );
     }
   }
@@ -113,6 +118,7 @@ export async function setPaymentStatus(
   patch.paidAt = status === 'paid' ? new Date().toISOString() : null;
   if (note !== undefined) patch.paymentNote = note;
   await updateDoc(doc(db, 'predictions', predId), patch);
+  await recomputePublicStats().catch(() => {});
 }
 
 // Voids MAIN entries still pending after the payment deadline (admin action).
@@ -126,6 +132,7 @@ export async function applyVoids(): Promise<number> {
   const batch = writeBatch(db);
   for (const p of toVoid) batch.update(doc(db, 'predictions', p.id), { paymentStatus: 'void' });
   await batch.commit();
+  await recomputePublicStats().catch(() => {});
   return toVoid.length;
 }
 
@@ -151,6 +158,7 @@ export async function fetchConfig(): Promise<AppConfig> {
     rifaEnabled: d.rifaEnabled ?? DEFAULT_CONFIG.rifaEnabled,
     rifaFee: d.rifaFee ?? DEFAULT_CONFIG.rifaFee,
     rifaPayoutSplit: d.rifaPayoutSplit ?? DEFAULT_CONFIG.rifaPayoutSplit,
+    rifaPrizes: { ...DEFAULT_CONFIG.rifaPrizes, ...(d.rifaPrizes ?? {}) },
   };
 }
 
