@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Users, Trophy, Star, Calendar, Wallet, Swords, Flame, Dice5 } from 'lucide-react';
+import { Users, Trophy, Calendar, Flame, Dice5 } from 'lucide-react';
 import {
   FULL_SCHEDULE, GROUPS, getTeam, BIG_PRIZE_THRESHOLD,
   type Prediction, type Results, type AppConfig, type PublicStats,
@@ -113,24 +113,8 @@ function CountdownTimer({ target }: { target: string }) {
   );
 }
 
-function StatCard({ icon, value, label }: { icon: React.ReactNode; value: string | number; label: string }) {
-  return (
-    <div className="rounded-xl p-4 flex items-center gap-3" style={{ background: '#0d5035', border: '1px solid rgba(245,166,35,0.15)' }}>
-      <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(245,166,35,0.15)' }}>{icon}</div>
-      <div>
-        <div style={{ fontFamily: 'Oswald, sans-serif', fontSize: '1.4rem', color: '#f5a623', fontWeight: 700, lineHeight: 1 }}>{value}</div>
-        <div style={{ fontSize: '0.72rem', color: '#7eb89a', letterSpacing: '0.08em' }}>{label}</div>
-      </div>
-    </div>
-  );
-}
-
 export function HomePage({ userName, onNavigate, predictions, results, config, stats }: HomePageProps) {
   const mains = predictions.filter(p => p.league === 'main');
-  const paidCount = mains.filter(p => p.paymentStatus === 'paid').length;
-  const sideEntries = predictions.filter(p => p.league !== 'main');
-  const msLeft = new Date(config.lockDate).getTime() - Date.now();
-  const daysLeft = Math.max(0, Math.ceil(msLeft / 86400000));
 
   const qualifiedConfederations = [
     { name: 'UEFA', teams: 16, color: '#4a9eff' },
@@ -181,14 +165,6 @@ export function HomePage({ userName, onNavigate, predictions, results, config, s
 
       {/* Live bote */}
       <LiveBoteBanner config={config} stats={stats} onNavigate={onNavigate} />
-
-      {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-        <StatCard icon={<Star size={18} style={{ color: '#d4f226' }} />} value={mains.length} label="TUS PRONÓSTICOS" />
-        <StatCard icon={<Wallet size={18} style={{ color: '#4ade80' }} />} value={paidCount} label="PAGADAS" />
-        <StatCard icon={<Swords size={18} style={{ color: '#c084fc' }} />} value={sideEntries.length} label="LIGAS APARTE" />
-        <StatCard icon={<Calendar size={18} style={{ color: '#7eb89a' }} />} value={daysLeft} label="DÍAS PARA EL INICIO" />
-      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         {/* Upcoming matches */}
