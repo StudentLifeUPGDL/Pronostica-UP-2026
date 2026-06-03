@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Plus, Trophy, Trash2, Edit3, Star, ChevronRight, Lock, Swords, Copy, Check } from 'lucide-react';
 import { type Prediction, type Results, type PaymentStatus, getTeam } from '../data/worldcup';
 import { computeScore, leagueScore } from '../../lib/scoring';
-import { leagueLabel } from '../../lib/payment';
+import { leagueLabel, paymentConfigured } from '../../lib/payment';
 import { PaymentCta } from './PaymentCta';
 
 interface MyPredictionsProps {
@@ -68,7 +68,7 @@ function FolioRow({ id, hint, compact }: { id: string; hint?: boolean; compact?:
       {copied && <span style={{ color: '#4ade80', fontSize: '0.62rem', fontFamily: 'DM Mono' }}>copiado</span>}
       {hint && !copied && (
         <span style={{ color: '#4a7d65', fontSize: '0.66rem', fontFamily: 'Nunito Sans' }}>
-          úsalo en el formulario de pago
+          úsalo como referencia de tu pago
         </span>
       )}
     </div>
@@ -250,7 +250,10 @@ export function MyPredictions({
   // Standalone side-league entries (R32 / R16 tournaments, independent of the main).
   const solos = predictions.filter(p => p.league !== 'main');
   const pendingCount = mains.filter(p => p.paymentStatus === 'pending').length;
-  const newDisabled = lockPassed || pendingCount >= maxPending;
+  // The pending cap only applies once payments are live (a payment link is set);
+  // while it isn't, registration is unlimited.
+  const capActive = paymentConfigured;
+  const newDisabled = lockPassed || (capActive && pendingCount >= maxPending);
   const joinOpenFor = (l: Prediction['league']) => (l === 'r32' ? r32JoinOpen : r16JoinOpen);
 
   return (
@@ -259,13 +262,13 @@ export function MyPredictions({
         <div>
           <h1 style={{ fontFamily: 'Oswald, sans-serif', color: '#f5a623', fontSize: '1.8rem', fontWeight: 700, letterSpacing: '0.04em' }}>MIS PRONÓSTICOS</h1>
           <p style={{ color: '#7eb89a', fontSize: '0.82rem', marginTop: '4px' }}>
-            {mains.length} pronóstico{mains.length !== 1 ? 's' : ''} · {pendingCount}/{maxPending} con pago pendiente
+            {mains.length} pronóstico{mains.length !== 1 ? 's' : ''}{capActive ? ` · ${pendingCount}/${maxPending} con pago pendiente` : ''}
           </p>
         </div>
         <button
           onClick={onNew}
           disabled={newDisabled}
-          title={lockPassed ? 'El torneo ya inició' : pendingCount >= maxPending ? `Máximo ${maxPending} pendientes` : ''}
+          title={lockPassed ? 'El torneo ya inició' : capActive && pendingCount >= maxPending ? `Máximo ${maxPending} pendientes` : ''}
           className="flex items-center gap-2 px-4 py-2.5 rounded-xl cursor-pointer transition-all disabled:opacity-40 disabled:cursor-not-allowed"
           style={{ background: '#f5a623', color: '#062b1a', fontFamily: 'Oswald, sans-serif', fontWeight: 700, fontSize: '0.85rem', letterSpacing: '0.05em' }}>
           <Plus size={16} /> NUEVO PRONÓSTICO

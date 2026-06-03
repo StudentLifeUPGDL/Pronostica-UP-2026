@@ -5,6 +5,7 @@ import {
 import type { User } from 'firebase/auth';
 import { db, firebaseConfigured } from './firebase';
 import { recomputePublicStats } from './stats';
+import { paymentConfigured } from './payment';
 import {
   DEFAULT_CONFIG, EMPTY_RESULTS,
   type AppConfig, type Prediction, type PaymentStatus, type Results,
@@ -83,8 +84,11 @@ export async function fetchAllPredictions(): Promise<Prediction[]> {
 
 // Create or update a MAIN entry. On create, enforces the per-user pending cap
 // (client-side; not a security boundary). The lock window is enforced by rules.
+// While no payment link is configured, payments aren't live yet, so the cap is
+// skipped and registration is unlimited; it re-engages automatically once the
+// payment form/link is set (VITE_PAYMENT_FORM_BASE_URL).
 export async function saveMainPrediction(pred: Prediction, isNew: boolean): Promise<void> {
-  if (isNew) {
+  if (isNew && paymentConfigured) {
     const [mine, cfg] = await Promise.all([fetchMyPredictions(pred.uid), fetchConfig()]);
     const pending = mine.filter(p => p.league === 'main' && p.paymentStatus === 'pending').length;
     if (pending >= cfg.maxPendingPerUser) {

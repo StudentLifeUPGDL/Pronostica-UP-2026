@@ -7,7 +7,7 @@ import {
   type Ticket, type Pool, type AppConfig, type Results, type PaymentStatus,
 } from '../data/worldcup';
 import { rifaPrizeLadder, rifaPlaces, teamStatus } from '../../lib/rifa';
-import { buildPaymentFormUrl, paymentFormConfigured, RIFA_LABEL } from '../../lib/payment';
+import { buildPaymentUrl, paymentConfigured, PAYMENT_CTA_LABEL, RIFA_LABEL } from '../../lib/payment';
 
 function formatDate(iso: string): string {
   const d = new Date(iso);
@@ -64,15 +64,15 @@ function FolioChip({ id }: { id: string }) {
 }
 
 function PaymentLink({ ticketId, email }: { ticketId: string; email?: string }) {
-  const url = buildPaymentFormUrl(ticketId, RIFA_LABEL, email);
-  if (!paymentFormConfigured || !url) {
-    return <span style={{ color: '#4a7d65', fontSize: '0.7rem', fontFamily: 'DM Mono' }}>formulario de pago no configurado</span>;
+  const url = buildPaymentUrl(ticketId, RIFA_LABEL, email);
+  if (!paymentConfigured || !url) {
+    return <span style={{ color: '#4a7d65', fontSize: '0.7rem', fontFamily: 'DM Mono' }}>pago no configurado</span>;
   }
   return (
     <a href={url} target="_blank" rel="noopener noreferrer"
       className="inline-flex items-center gap-1.5 rounded-lg cursor-pointer transition-all"
       style={{ background: 'rgba(212,242,38,0.12)', color: '#d4f226', border: '1px solid rgba(212,242,38,0.3)', fontFamily: 'Oswald, sans-serif', letterSpacing: '0.04em', fontSize: '0.72rem', padding: '4px 10px' }}>
-      CONFIRMAR TRANSFERENCIA
+      {PAYMENT_CTA_LABEL}
     </a>
   );
 }

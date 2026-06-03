@@ -1,21 +1,21 @@
 import { CreditCard, ExternalLink } from 'lucide-react';
 import type { Prediction } from '../data/worldcup';
-import { buildGoogleFormUrl, paymentFormConfigured } from '../../lib/payment';
+import { buildPredictionPaymentUrl, paymentConfigured, PAYMENT_CTA_LABEL } from '../../lib/payment';
 
-// Button that sends the user to the external Google Form (pre-filled with the
-// entry's ID + email + competition) to paste their bank-transfer confirmation.
+// Button that sends the user to the external payment link (a payment app, or a
+// pre-filled Google Form in legacy mode) to complete/confirm their payment.
 export function PaymentCta({ prediction, email, compact }: {
   prediction: Prediction;
   email?: string;
   compact?: boolean;
 }) {
   if (prediction.paymentStatus === 'paid') return null;
-  const url = buildGoogleFormUrl(prediction, email);
+  const url = buildPredictionPaymentUrl(prediction, email);
 
-  if (!paymentFormConfigured || !url) {
+  if (!paymentConfigured || !url) {
     return (
       <span style={{ color: '#4a7d65', fontSize: '0.7rem', fontFamily: 'DM Mono' }}>
-        formulario de pago no configurado
+        pago no configurado
       </span>
     );
   }
@@ -31,7 +31,7 @@ export function PaymentCta({ prediction, email, compact }: {
         padding: compact ? '4px 10px' : '8px 14px',
       }}>
       <CreditCard size={compact ? 12 : 14} />
-      CONFIRMAR TRANSFERENCIA
+      {PAYMENT_CTA_LABEL}
       <ExternalLink size={compact ? 10 : 12} />
     </a>
   );
