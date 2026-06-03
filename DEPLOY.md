@@ -1,208 +1,120 @@
 # 🚀 Checklist de despliegue — Quiniela Mundial 2026
 
-Guía paso a paso para pasar de "el código ya compila" a "la app está en línea y la
-gente puede jugar". El **código ya está listo** (compila sin errores); lo que falta
-es **configuración externa y secretos** que, correctamente, no viven en el repo.
-
-> **Orden importa.** Hay 2 pasos que casi siempre se olvidan y dejan la app inservible:
-> el **paso 8** (claim de admin) y el **paso 9** (sembrar `config/app`). Sin el paso 9,
-> *nadie* puede crear quinielas aunque todo lo demás esté bien.
-
-Tiempo estimado: **30–45 min**.
+> **Estado:** la app base **ya está en línea y operando** (Firebase, reglas, pago por
+> Google Form, Vercel, claim de admin y `config/app` sembrado). Esta guía conserva esos
+> pasos como **referencia / ya completado** y agrega lo único nuevo pendiente: **activar
+> la Rifa de Países** (sección ⭐ al final).
 
 ---
 
-## Resumen de lo que falta
+## ✅ Base — ya completado (referencia)
 
-| Paso | Qué | Bloquea si falta |
-|------|-----|------------------|
-| 1 | Proyecto Firebase (Auth + Firestore + app web) | Todo |
-| 2 | `.env.local` con las claves | Login / datos |
-| 3 | Desplegar `firestore.rules` | Permisos (todo se rechaza) |
-| 4 | Google Form de pago + IDs `entry.*` | Botón de pago |
-| 5 | Prueba local (`pnpm dev`) | — (verificación) |
-| 6 | Proyecto en Vercel + variables `VITE_*` | Sitio público |
-| 7 | Dominio de Vercel en "Authorized domains" | Login en producción |
-| 8 | Claim `admin` (`setAdmin.mjs`) | Escrituras de admin |
-| 9 | **Sembrar `config/app`** (Admin → Guardar config) | **Crear quinielas** |
-| 10 | Prueba de humo end-to-end | — (verificación) |
+| Paso | Qué | Estado |
+|------|-----|--------|
+| 1 | Proyecto Firebase (Auth + Firestore + app web) | ✅ Hecho |
+| 2 | `.env.local` + variables `VITE_*` | ✅ Hecho |
+| 3 | Reglas `firestore.rules` publicadas | ✅ Hecho · ⚠️ **re-publicar** (cambiaron, ver abajo) |
+| 4 | Google Form de pago + IDs `entry.*` | ✅ Hecho |
+| 5 | Prueba local (`pnpm dev`) | ✅ Hecho |
+| 6 | Vercel + variables `VITE_*` | ✅ Hecho |
+| 7 | Dominio de Vercel en "Authorized domains" | ✅ Hecho |
+| 8 | Claim `admin` (`setAdmin.mjs`) | ✅ Hecho |
+| 9 | `config/app` sembrado (Admin → Guardar config) | ✅ Hecho · ⚠️ **re-guardar** (campos nuevos) |
+| 10 | Prueba de humo end-to-end | ✅ Hecho |
 
----
-
-## Requisitos previos
-
-- [ ] **Node 18+** instalado (`node -v`).
-- [ ] **pnpm** vía corepack: `corepack enable` (este repo usa pnpm; ya hay `pnpm-lock.yaml`).
-- [ ] Cuenta de **Google/Firebase** y cuenta de **Vercel** (puedes entrar con GitHub).
-- [ ] El repo clonado y dependencias instaladas:
-  ```sh
-  corepack pnpm install
-  ```
+> Si necesitas el detalle de cualquiera de estos pasos, está en el historial de git de
+> este archivo (commit anterior). Los comandos de referencia siguen al final.
 
 ---
 
-## Paso 1 — Crear el proyecto de Firebase
+## ⭐ NUEVO — Activar la "Rifa de Países" (modo tradicional)
 
-1. [ ] En [console.firebase.google.com](https://console.firebase.google.com) → **Agregar proyecto**.
-2. [ ] **Build → Authentication → Sign-in method →** habilita **Email/Password**.
-   - (Opcional) En **Templates** personaliza en español el correo de *restablecimiento de
-     contraseña*. (La app **no** envía correo de verificación.)
-3. [ ] **Build → Firestore Database → Crear base de datos →** modo **producción** (no "test").
-   Elige una región cercana (p. ej. `us-central` / `nam5`).
-4. [ ] **⚙️ Project settings → General → Your apps →** clic en **`</>` (Web)**, registra la
-   app (un nombre cualquiera, *sin* Hosting) y **copia el objeto `firebaseConfig`**. Lo
-   necesitas en el paso 2.
+La Rifa permite comprar boletos que asignan **una selección al azar**. Cuando un pool
+junta **48 boletos pagados**, un **cron de GitHub Actions** sortea los 48 equipos,
+**envía un correo** (Resend) a cada dueño y abre el siguiente pool. Toda la asignación
+ocurre en el servidor (cron con `firebase-admin`), nunca en el navegador, así que nadie
+puede elegir su equipo.
 
-> La `apiKey` web de Firebase **no es secreta** (es un identificador). La seguridad la dan
-> las reglas de Firestore + Auth, así que es seguro incluirla en el bundle.
+Tiempo estimado: **15–25 min**.
 
----
+### A — Re-publicar las reglas de Firestore (obligatorio)
 
-## Paso 2 — Variables de entorno (`.env.local`)
+`firestore.rules` ahora incluye las colecciones `pools` y `tickets`. Sin esto, comprar
+boletos falla con *"Missing or insufficient permissions"*.
 
-1. [ ] Copia la plantilla:
-   ```sh
-   cp .env.example .env.local
-   ```
-2. [ ] Llena las 6 variables de Firebase con los valores del `firebaseConfig` del paso 1:
-   ```
-   VITE_FIREBASE_API_KEY=...
-   VITE_FIREBASE_AUTH_DOMAIN=tu-proyecto.firebaseapp.com
-   VITE_FIREBASE_PROJECT_ID=tu-proyecto
-   VITE_FIREBASE_STORAGE_BUCKET=tu-proyecto.appspot.com
-   VITE_FIREBASE_MESSAGING_SENDER_ID=...
-   VITE_FIREBASE_APP_ID=1:...:web:...
-   ```
-3. [ ] Las 4 variables `VITE_PAYMENT_FORM_*` se llenan en el **paso 4** (puedes dejarlas
-   vacías por ahora; el botón de pago simplemente no aparecerá hasta que las pongas).
-
-> ⚠️ Vite **incrusta** estas variables al compilar (`vite build`). Por eso también hay que
-> ponerlas en Vercel **antes** del build (paso 6), no solo en tu máquina.
-
----
-
-## Paso 3 — Desplegar las reglas de seguridad
-
-Las reglas ya están escritas en `firestore.rules`, pero hay que **publicarlas** al proyecto.
-
-**Opción A (CLI):**
 ```sh
-corepack pnpm dlx firebase-tools login
-corepack pnpm dlx firebase-tools use --add        # selecciona tu proyecto
 corepack pnpm dlx firebase-tools deploy --only firestore:rules
 ```
+o pega `firestore.rules` en Firestore → **Rules → Publicar**.
 
-**Opción B (consola):** Firestore → pestaña **Rules** → pega el contenido de
-`firestore.rules` → **Publicar**.
+- [ ] Reglas re-publicadas.
 
-- [ ] Reglas publicadas.
+### B — Re-guardar la configuración (campos nuevos)
 
----
+`config/app` ahora tiene `rifaEnabled`, `rifaFee` y `rifaPayoutSplit`.
 
-## Paso 4 — Google Form de pago
+1. [ ] Entra como admin → **Admin → Resultados / Config**.
+2. [ ] En la sección **RIFA DE PAÍSES**: activa el modo, fija el **precio por boleto**
+   (default $50) y el **reparto del bote** (default 70% campeón / 20% subcampeón / 10% 3°).
+3. [ ] Pulsa **Guardar configuración**.
 
-1. [ ] Crea un **Google Form** "Comprobante de pago — Quiniela 2026" con campos:
-   **ID de quiniela**, **Correo**, **Competencia/Arreglo**, **Comprobante** (archivo o enlace).
-2. [ ] Menú **⋮ → Obtener vínculo previamente rellenado** → llena valores de ejemplo →
-   **Obtener vínculo** → copia la URL.
-3. [ ] De esa URL extrae el `.../viewform` (base) y los IDs `entry.XXXXXXX` de cada campo.
-4. [ ] Pásalos a `.env.local`:
-   ```
-   VITE_PAYMENT_FORM_BASE_URL=https://docs.google.com/forms/d/e/XXXX/viewform
-   VITE_PAYMENT_FORM_ENTRY_PREDID=entry.1111111
-   VITE_PAYMENT_FORM_ENTRY_EMAIL=entry.2222222
-   VITE_PAYMENT_FORM_ENTRY_LEAGUE=entry.3333333
-   ```
+### C — Crear una "Contraseña de aplicación" de Gmail (correos)
 
----
+Los correos se envían por **Gmail SMTP** desde tu propia cuenta — no necesitas dominio.
+Sale autenticado por Google, así que entrega bien (no spam). Límite ~500 correos/día.
 
-## Paso 5 — Probar en local
+1. [ ] En la cuenta de Gmail que enviará los correos, activa **Verificación en 2 pasos**
+   (https://myaccount.google.com/security).
+2. [ ] Crea una **Contraseña de aplicación**: https://myaccount.google.com/apppasswords
+   → nómbrala "Pronostica Pantera" → copia los **16 caracteres** (sin espacios).
+3. [ ] Esa cadena es tu `GMAIL_APP_PASSWORD` (NO es tu contraseña normal de Gmail).
 
-```sh
-corepack pnpm dev      # http://localhost:5173
-```
+> ⚠️ El correo `@up.edu.mx` no sirve aquí (Resend exigía verificar el dominio y no eres
+> su administrador). Gmail SMTP evita ese problema usando tu cuenta personal de Gmail.
 
-- [ ] Si ves la pantalla **"FALTA CONFIGURAR FIREBASE"**, revisa el `.env.local`
-  (`VITE_FIREBASE_API_KEY` y `VITE_FIREBASE_PROJECT_ID`) y reinicia `pnpm dev`.
-- [ ] Regístrate con el correo del organizador: **`hectorineg10@gmail.com`** (lo necesitas
-  para el paso 8). La cuenta queda activa de inmediato (sin verificación por correo).
+### D — Secrets en GitHub (para el cron)
 
----
+En el repo → **Settings → Secrets and variables → Actions → New repository secret**:
 
-## Paso 6 — Desplegar en Vercel
+| Secret | Valor | ¿Ya existía? |
+|--------|-------|--------------|
+| `FIREBASE_SERVICE_ACCOUNT` | El JSON de la cuenta de servicio en **una sola línea** | Sí, lo usa `sync-results` |
+| `GMAIL_USER` | El Gmail que envía, ej. `tucorreo@gmail.com` | **Nuevo** |
+| `GMAIL_APP_PASSWORD` | Los 16 caracteres del paso C | **Nuevo** |
+| `GMAIL_FROM_NAME` | `Pronostica Pantera` (opcional, nombre visible) | **Nuevo** |
+| `APP_URL` | `https://tu-app.vercel.app` (opcional, botón del correo) | **Nuevo** |
 
-1. [ ] Sube el repo a GitHub e impórtalo en [vercel.com](https://vercel.com) → **Add New → Project**.
-2. [ ] Framework preset: **Vite**. Build command: `pnpm build`. Output dir: `dist`.
-   (`vercel.json` ya añade el *rewrite* SPA.)
-3. [ ] **Settings → Environment Variables:** agrega **todas** las `VITE_*` de tu `.env.local`
-   (las 6 de Firebase + las 4 del formulario), para los entornos *Production* y *Preview*.
-4. [ ] **Deploy.** Anota la URL final (`tu-app.vercel.app`).
+> Si `FIREBASE_SERVICE_ACCOUNT` ya está configurado para `sync-results.yml`, **no** hay
+> que volver a crearlo; el workflow nuevo (`manage-pools.yml`) usa el mismo secret.
 
-> Si cambias variables después, hay que **volver a desplegar** (Redeploy) para que Vite las
-> vuelva a incrustar.
+### E — El workflow del cron
 
----
+`.github/workflows/manage-pools.yml` ya está en el repo. Corre cada **5 min** y también
+se puede disparar a mano.
 
-## Paso 7 — Autorizar el dominio de Vercel en Firebase
+- [ ] GitHub → pestaña **Actions** → workflow **"Manage Rifa pools"** → habilítalo si
+  Actions está deshabilitado.
+- [ ] (Prueba) **Run workflow** para forzar una corrida inmediata.
 
-- [ ] Firebase → **Authentication → Settings → Authorized domains → Add domain →**
-  agrega `tu-app.vercel.app`.
+> ⚠️ **Sobre "inmediato":** GitHub Actions **no garantiza** crons por debajo de ~5 min y
+> puede retrasarlos bajo carga. La asignación es **casi inmediata** (≈ cada 5 min). Para
+> un sorteo al instante, usa **Run workflow** manualmente. Una asignación verdaderamente
+> instantánea requeriría Cloud Functions (plan Blaze), que este proyecto no usa.
 
-Sin esto, el login en producción falla con `auth/unauthorized-domain`.
+### F — Prueba de humo de la Rifa
 
----
-
-## Paso 8 — Otorgar el claim de administrador (una sola vez)
-
-El allowlist de correos solo muestra la *interfaz* de admin; el permiso real para
-**escribir** (config, resultados, confirmar pagos) lo da el *custom claim* `admin`.
-
-> `firebase-admin` ya está incluido como devDependency en este repo (no necesitas
-> instalarlo aparte).
-
-1. [ ] Firebase → **⚙️ Project settings → Service accounts → Generate new private key**.
-   Guarda el archivo como **`scripts/serviceAccount.json`** (ya está en `.gitignore` — no
-   lo subas).
-2. [ ] Con el organizador ya registrado en la app (paso 5), ejecuta:
-   ```sh
-   node scripts/setAdmin.mjs hectorineg10@gmail.com
-   ```
-3. [ ] **Cierra sesión y vuelve a entrar** (o recarga). Debe aparecer la pestaña **Admin**.
-
----
-
-## Paso 9 — ⭐ Sembrar `config/app` (¡el paso que todos olvidan!)
-
-Las reglas de seguridad llaman `get(config/app)` cada vez que alguien crea/edita una
-quiniela. Si ese documento **no existe**, esas llamadas fallan y **nadie puede crear
-quinielas** (error de permisos), aunque todo lo demás esté perfecto.
-
-1. [ ] Entra como admin → pestaña **Admin → Resultados / Config**.
-2. [ ] Revisa fechas, cuotas y % de premio.
-3. [ ] Pulsa **Guardar configuración** **una vez**. Esto crea el documento `config/app`.
-
-Valores por defecto (editables en esa pantalla):
-
-- Cierre quiniela principal: **11 jun 2026, 16:00 (CDMX)**
-- Límite de pago: **14 jun 2026, 23:59**
-- Inicio R32 / R16: **28 jun** / **4 jul 2026**
-- Cuotas: principal **$100**, arreglos **$50** · Moneda **MXN** · Premio **90%**, redondeo a **100**
-
----
-
-## Paso 10 — Prueba de humo end-to-end
-
-Con una cuenta de prueba (un segundo correo, no el de admin):
-
-- [ ] Registro → la cuenta entra directo (sin paso de verificación).
-- [ ] Crear una quiniela principal → guardar (debe aparecer en **Mis Quinielas** como *pendiente*).
-- [ ] Botón de pago abre el Google Form **pre-rellenado** con ID, correo y competencia.
-- [ ] Como **admin**: en **Reporte general**, confirmar el pago de esa quiniela → pasa a *pagada*.
-- [ ] Como **admin**: en **Resultados / Config**, capturar algún resultado → el puntaje se
-  recalcula en el reporte.
-- [ ] (Opcional) Exportar **CSV** del reporte.
-
-Si todos los pasos pasan, **estás en vivo**. 🎉
+- [ ] Como usuario: **Rifa de Países → Comprar boleto** → aparece el folio `RIFA-XXXXX` y
+  el botón **Confirmar transferencia** (abre el Google Form prellenado con folio y correo).
+- [ ] Como admin: **Admin → Rifa de Países** → cambia ese boleto a **pagado**.
+- [ ] (Para probar la asignación sin esperar 48 boletos) baja temporalmente la prueba:
+  marca 48 boletos como pagados, o ejecuta el cron en seco localmente:
+  ```sh
+  node scripts/managePools.mjs --dry-run      # muestra qué pools/asignaciones haría
+  node scripts/managePools.mjs --write        # asigna + envía correos
+  node scripts/managePools.mjs --write --no-email   # asigna sin correos
+  ```
+  (Requiere `scripts/serviceAccount.json` y, para correos, `RESEND_API_KEY` + `RESEND_FROM`.)
+- [ ] Al llenarse el pool: cada boleto muestra su equipo y llega el correo. ✅
 
 ---
 
@@ -211,11 +123,14 @@ Si todos los pasos pasan, **estás en vivo**. 🎉
 | Síntoma | Causa probable | Solución |
 |---|---|---|
 | Pantalla "FALTA CONFIGURAR FIREBASE" | Faltan `VITE_FIREBASE_*` o no se reinició Vite | Revisa `.env.local`, reinicia `pnpm dev` / Redeploy en Vercel |
-| Login falla con `auth/unauthorized-domain` | Dominio no autorizado | Paso 7 |
-| "Missing or insufficient permissions" al **crear quiniela** | `config/app` no sembrado | Paso 9 |
-| "Missing or insufficient permissions" al **guardar config/resultados** | Falta el claim `admin` | Paso 8 (y volver a iniciar sesión) |
-| No aparece la pestaña **Admin** | No re-iniciaste sesión tras el claim, o el correo no está en `adminEmails` | Cierra y abre sesión; verifica el correo |
-| El botón de pago no aparece | Faltan `VITE_PAYMENT_FORM_*` | Paso 4 + Redeploy |
+| Login falla con `auth/unauthorized-domain` | Dominio no autorizado | Authentication → Settings → Authorized domains |
+| "Missing or insufficient permissions" al **crear quiniela** | `config/app` no sembrado | Admin → Guardar configuración |
+| "Missing or insufficient permissions" al **comprar boleto** | Reglas nuevas no publicadas | Sección **A** (re-publicar `firestore.rules`) |
+| "Missing or insufficient permissions" al **guardar config/resultados** | Falta el claim `admin` | `setAdmin.mjs` (y volver a iniciar sesión) |
+| No aparece la pestaña **Rifa de Países** | `rifaEnabled` apagado | Admin → Resultados / Config → activar Rifa → Guardar |
+| Los pools no se asignan | El cron no corre / faltan secrets | Actions → habilitar **"Manage Rifa pools"**; revisa `FIREBASE_SERVICE_ACCOUNT` |
+| No llegan correos | `RESEND_*` mal o dominio sin verificar | Revisa secrets `RESEND_API_KEY`/`RESEND_FROM` y el dominio en Resend |
+| El botón de pago no aparece | Faltan `VITE_PAYMENT_FORM_*` | Configurar el Google Form + Redeploy |
 | Variables nuevas no surten efecto en producción | Vite incrusta en build | **Redeploy** en Vercel |
 
 ---
@@ -226,5 +141,9 @@ Si todos los pasos pasan, **estás en vivo**. 🎉
 corepack pnpm install     # instalar dependencias
 corepack pnpm dev         # desarrollo  → http://localhost:5173
 corepack pnpm build       # genera dist/  (lo que Vercel publica)
-node scripts/setAdmin.mjs <correo>   # otorgar claim admin (requiere serviceAccount.json)
+
+node scripts/setAdmin.mjs <correo>            # otorgar claim admin (requiere serviceAccount.json)
+node scripts/syncResults.mjs --dry-run        # ver resultados que sincronizaría
+node scripts/managePools.mjs --dry-run        # ver asignaciones de Rifa que haría
+node scripts/managePools.mjs --write          # asignar pools llenos + enviar correos
 ```

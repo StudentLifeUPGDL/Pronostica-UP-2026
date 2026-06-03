@@ -7,6 +7,7 @@ interface HeaderProps {
   onNavigate: (page: Page) => void;
   userName: string;
   isAdmin: boolean;
+  showRifa: boolean;
   onLogout: () => void;
 }
 
@@ -17,9 +18,14 @@ const BASE_NAV: { label: string; page: Page }[] = [
   { label: 'Reglas', page: 'explanations' },
 ];
 
-export function Header({ currentPage, onNavigate, userName, isAdmin, onLogout }: HeaderProps) {
+export function Header({ currentPage, onNavigate, userName, isAdmin, showRifa, onLogout }: HeaderProps) {
   const [menuOpen, setMenuOpen] = useState(false);
-  const navItems = isAdmin ? [...BASE_NAV, { label: 'Admin', page: 'admin' as Page }] : BASE_NAV;
+  const navItems = [
+    ...BASE_NAV.slice(0, 3),
+    ...(showRifa ? [{ label: 'Rifa de Países', page: 'rifa' as Page }] : []),
+    ...BASE_NAV.slice(3),
+    ...(isAdmin ? [{ label: 'Admin', page: 'admin' as Page }] : []),
+  ];
 
   return (
     <header className="sticky top-0 z-50" style={{ background: '#062b1a', borderBottom: '2px solid rgba(245,166,35,0.3)' }}>

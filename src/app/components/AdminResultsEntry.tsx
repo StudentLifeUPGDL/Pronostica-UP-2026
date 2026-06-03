@@ -145,6 +145,37 @@ export function AdminResultsEntry({ config, onSaved }: { config: AppConfig; onSa
             <input type="text" value={cfg.currency} onChange={e => setCfg({ ...cfg, currency: e.target.value })} style={inputStyle} />
           </label>
         </div>
+
+        {/* ── Rifa de Países ── */}
+        <div className="mt-5 pt-4" style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+          <div style={{ ...labelStyle, color: '#f5a623', marginBottom: '10px' }}>RIFA DE PAÍSES (MODO TRADICIONAL)</div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <label className="flex items-center gap-2 sm:col-span-2">
+              <input type="checkbox" checked={cfg.rifaEnabled} onChange={e => setCfg({ ...cfg, rifaEnabled: e.target.checked })} style={{ width: 16, height: 16, accentColor: '#f5a623' }} />
+              <span style={labelStyle}>Habilitar el modo Rifa de Países</span>
+            </label>
+            <label className="flex flex-col gap-1">
+              <span style={labelStyle}>Precio por boleto ({cfg.currency})</span>
+              <input type="number" min={0} value={cfg.rifaFee}
+                onChange={e => setCfg({ ...cfg, rifaFee: Number(e.target.value) })} style={inputStyle} />
+            </label>
+            <div className="flex flex-col gap-1">
+              <span style={labelStyle}>Reparto del bote (campeón / subcampeón / 3°, 0–1)</span>
+              <div className="flex gap-2">
+                {([0, 1, 2] as const).map(i => (
+                  <input key={i} type="number" min={0} max={1} step={0.05}
+                    value={cfg.rifaPayoutSplit[i] ?? 0}
+                    onChange={e => {
+                      const next = [...cfg.rifaPayoutSplit];
+                      next[i] = Number(e.target.value);
+                      setCfg({ ...cfg, rifaPayoutSplit: next });
+                    }}
+                    style={inputStyle} />
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
         <button onClick={handleSaveConfig} disabled={busy} className="mt-4 flex items-center gap-2 px-4 py-2.5 rounded-lg cursor-pointer disabled:opacity-50"
           style={{ background: '#f5a623', color: '#062b1a', fontFamily: 'Oswald, sans-serif', fontWeight: 700, fontSize: '0.82rem', letterSpacing: '0.05em' }}>
           <Save size={14} /> GUARDAR CONFIGURACIÓN

@@ -148,6 +148,9 @@ export async function fetchConfig(): Promise<AppConfig> {
     fees: d.fees ?? DEFAULT_CONFIG.fees,
     payoutPercent: d.payoutPercent ?? DEFAULT_CONFIG.payoutPercent,
     payoutRoundTo: d.payoutRoundTo ?? DEFAULT_CONFIG.payoutRoundTo,
+    rifaEnabled: d.rifaEnabled ?? DEFAULT_CONFIG.rifaEnabled,
+    rifaFee: d.rifaFee ?? DEFAULT_CONFIG.rifaFee,
+    rifaPayoutSplit: d.rifaPayoutSplit ?? DEFAULT_CONFIG.rifaPayoutSplit,
   };
 }
 
