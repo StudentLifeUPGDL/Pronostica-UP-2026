@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
-  type Prediction, type AppConfig, type Results,
+  type Prediction, type AppConfig, type Results, type Ticket, type Pool,
   DEFAULT_CONFIG, EMPTY_RESULTS,
 } from './data/worldcup';
 import { useAuth } from '../lib/auth';
@@ -8,18 +8,20 @@ import {
   fetchMyPredictions, fetchConfig, fetchResults,
   saveMainPrediction, saveSideEntry, deletePrediction,
 } from '../lib/predictions';
+import { fetchMyTickets, fetchPools, buyTicket, deleteTicket } from '../lib/rifa';
 import { AuthPage } from './components/AuthPage';
-import { VerifyEmailNotice } from './components/VerifyEmailNotice';
 import { Header } from './components/Header';
 import { HomePage } from './components/HomePage';
 import { ResultsPage } from './components/ResultsPage';
 import { BracketWizard } from './components/BracketWizard';
 import { MyPredictions } from './components/MyPredictions';
+import { RifaPage } from './components/RifaPage';
 import { ExplanationsPage } from './components/ExplanationsPage';
 import { AdminReport } from './components/AdminReport';
+import { AdminRifa } from './components/AdminRifa';
 import { AdminResultsEntry } from './components/AdminResultsEntry';
 
-export type Page = 'home' | 'results' | 'bracket' | 'my-predictions' | 'explanations' | 'admin';
+export type Page = 'home' | 'results' | 'bracket' | 'my-predictions' | 'rifa' | 'explanations' | 'admin';
 type WizardMode = 'main' | 'joinR32' | 'joinR16';
 
 interface WizardState {
@@ -56,14 +58,16 @@ function FirebaseSetupNotice() {
 }
 
 export default function App() {
-  const { user, loading, configured, isVerified, isAdmin, logOut } = useAuth();
+  const { user, loading, configured, isAdmin, logOut } = useAuth();
 
   const [currentPage, setCurrentPage] = useState<Page>('home');
   const [predictions, setPredictions] = useState<Prediction[]>([]);
+  const [tickets, setTickets] = useState<Ticket[]>([]);
+  const [pools, setPools] = useState<Pool[]>([]);
   const [config, setConfig] = useState<AppConfig>(DEFAULT_CONFIG);
   const [results, setResults] = useState<Results>(EMPTY_RESULTS);
   const [wizard, setWizard] = useState<WizardState | null>(null);
-  const [adminTab, setAdminTab] = useState<'report' | 'results'>('report');
+  const [adminTab, setAdminTab] = useState<'report' | 'rifa' | 'results'>('report');
   const [actionError, setActionError] = useState('');
 
   const uid = user?.uid ?? null;
@@ -78,11 +82,20 @@ export default function App() {
     } catch (e) {
       console.error('Error cargando datos', e);
     }
+    // Rifa data is loaded separately so a permission error here (e.g. before the
+    // pools/tickets rules are published) never breaks the core quiniela load.
+    try {
+      const [tks, pls] = await Promise.all([fetchMyTickets(uid), fetchPools()]);
+      setTickets(tks);
+      setPools(pls);
+    } catch (e) {
+      console.error('Error cargando datos de la rifa', e);
+    }
   }, [uid]);
 
   useEffect(() => {
     if (uid) reloadData();
-    else { setPredictions([]); setWizard(null); }
+    else { setPredictions([]); setTickets([]); setPools([]); setWizard(null); }
   }, [uid, reloadData]);
 
   // ─── Lock / join windows ────────────────────────────────────────────────────
@@ -102,7 +115,6 @@ export default function App() {
   }
 
   function handleNewPrediction() {
-    if (!isVerified) { setActionError('Verifica tu correo para crear quinielas.'); return; }
     if (lockPassed) { setActionError('El torneo ya inició: no se pueden crear nuevas quinielas.'); return; }
     const n = predictions.filter(p => p.league === 'main').length + 1;
     setWizard({ mode: 'main', base: null, name: `Mi Quiniela #${n}` });
@@ -110,7 +122,6 @@ export default function App() {
   }
 
   function handleEditPrediction(pred: Prediction) {
-    if (!isVerified) { setActionError('Verifica tu correo para editar.'); return; }
     // Standalone side-league entry (r32/r16): editable until its round starts.
     if (pred.league !== 'main') {
       const open = pred.league === 'r32' ? r32JoinOpen : r16JoinOpen;
@@ -125,7 +136,6 @@ export default function App() {
   }
 
   function handleJoin(round: 'r32' | 'r16') {
-    if (!isVerified) { setActionError('Verifica tu correo para unirte a una liga.'); return; }
     // Standalone entry: no parent main. The player builds a provisional combination
     // that seeds the bracket; real results overlay it as they come in.
     setWizard({
@@ -159,6 +169,18 @@ export default function App() {
     }
   }
 
+  // ─── Rifa de Países (modo tradicional) ──────────────────────────────────────
+  async function handleBuyTicket() {
+    if (!user) return;
+    await buyTicket({ uid: user.uid, email: user.email ?? undefined, displayName });
+    await reloadData();
+  }
+
+  async function handleDeleteTicket(id: string) {
+    await deleteTicket(id);
+    await reloadData();
+  }
+
   // ─── Gating ────────────────────────────────────────────────────────────────
   if (!configured) return <FirebaseSetupNotice />;
   if (loading) {
@@ -180,10 +202,9 @@ export default function App() {
         onNavigate={handleNavigate}
         userName={displayName}
         isAdmin={isAdmin}
+        showRifa={config.rifaEnabled}
         onLogout={logOut}
       />
-
-      {!isVerified && <VerifyEmailNotice />}
 
       {actionError && (
         <div className="max-w-4xl mx-auto px-4 pt-4">
@@ -224,7 +245,6 @@ export default function App() {
                 results={results}
                 email={user.email ?? undefined}
                 lockPassed={lockPassed}
-                canSubmit={isVerified}
                 r32JoinOpen={r32JoinOpen}
                 r16JoinOpen={r16JoinOpen}
                 maxPending={config.maxPendingPerUser}
@@ -234,11 +254,22 @@ export default function App() {
                 onJoin={handleJoin}
               />
             )}
+            {currentPage === 'rifa' && config.rifaEnabled && (
+              <RifaPage
+                tickets={tickets}
+                pools={pools}
+                config={config}
+                results={results}
+                email={user.email ?? undefined}
+                onBuy={handleBuyTicket}
+                onDelete={handleDeleteTicket}
+              />
+            )}
             {currentPage === 'explanations' && <ExplanationsPage config={config} />}
             {showAdmin && (
               <div className="max-w-6xl mx-auto px-4 py-6">
                 <div className="flex gap-2 mb-5">
-                  {([['report', 'Reporte general'], ['results', 'Resultados / Config']] as const).map(([key, label]) => (
+                  {([['report', 'Reporte general'], ['rifa', 'Rifa de Países'], ['results', 'Resultados / Config']] as const).map(([key, label]) => (
                     <button key={key} onClick={() => setAdminTab(key)}
                       className="px-4 py-2 rounded-lg cursor-pointer"
                       style={{
@@ -251,9 +282,9 @@ export default function App() {
                     </button>
                   ))}
                 </div>
-                {adminTab === 'report'
-                  ? <AdminReport config={config} results={results} />
-                  : <AdminResultsEntry config={config} onSaved={reloadData} />}
+                {adminTab === 'report' && <AdminReport config={config} results={results} />}
+                {adminTab === 'rifa' && <AdminRifa config={config} results={results} />}
+                {adminTab === 'results' && <AdminResultsEntry config={config} onSaved={reloadData} />}
               </div>
             )}
             {currentPage === 'admin' && !isAdmin && (

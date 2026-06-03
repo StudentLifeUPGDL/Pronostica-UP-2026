@@ -20,9 +20,18 @@ export function leagueLabel(league: League): string {
   return LEAGUE_LABEL[league] ?? league;
 }
 
+// Label shown for Rifa de Países tickets on the payment form.
+export const RIFA_LABEL = 'Rifa de Países';
+
 // Builds a pre-filled Google Form URL carrying the entry's ID, the user's email,
 // and which competition the payment is for, so the user only pastes their transfer.
 export function buildGoogleFormUrl(prediction: Prediction, email?: string): string {
+  return buildPaymentFormUrl(prediction.id, leagueLabel(prediction.league), email || prediction.userEmail);
+}
+
+// Same pre-filled payment form, addressed by an arbitrary id + competition label.
+// Used by Rifa tickets (which aren't Predictions but share the same form/fields).
+export function buildPaymentFormUrl(id: string, competition: string, email?: string): string {
   if (!BASE) return '';
   let url: URL;
   try {
@@ -31,9 +40,8 @@ export function buildGoogleFormUrl(prediction: Prediction, email?: string): stri
     return '';
   }
   url.searchParams.set('usp', 'pp_url');
-  if (ENTRY_PREDID) url.searchParams.set(ENTRY_PREDID, prediction.id);
-  const mail = email || prediction.userEmail || '';
-  if (ENTRY_EMAIL && mail) url.searchParams.set(ENTRY_EMAIL, mail);
-  if (ENTRY_LEAGUE) url.searchParams.set(ENTRY_LEAGUE, leagueLabel(prediction.league));
+  if (ENTRY_PREDID) url.searchParams.set(ENTRY_PREDID, id);
+  if (ENTRY_EMAIL && email) url.searchParams.set(ENTRY_EMAIL, email);
+  if (ENTRY_LEAGUE) url.searchParams.set(ENTRY_LEAGUE, competition);
   return url.toString();
 }

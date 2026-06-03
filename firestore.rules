@@ -1,4 +1,4 @@
-rules_version = '2';
+rules_version = '3';
 
 // Quiniela Mundial 2026 — Firestore security rules.
 //
@@ -9,6 +9,11 @@ rules_version = '2';
 //   - predictions/{predId}   : a user reads/writes only their own entries, only while
 //                              that league's window is open, and cannot self-mark paid;
 //                              admin reads all and manages paymentStatus.
+//   - pools/{poolId}         : signed-in read; writes only by admin/cron (admin SDK).
+//   - tickets/{ticketId}     : a user reads only their own tickets and may create a
+//                              PENDING ticket with no pool/team (cannot self-assign a
+//                              team or mark paid). Updates are admin/cron only; the
+//                              owner may delete only an unpaid, un-pooled ticket.
 //
 // NOTE (client-enforced, not security boundaries): the "max 5 pending" cap and the
 // payment-deadline auto-void. These are courtesy/business rules; a Cloud Function can
@@ -18,7 +23,6 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     function isSignedIn() { return request.auth != null; }
-    function isVerified() { return isSignedIn() && request.auth.token.email_verified == true; }
     function isAdmin()    { return isSignedIn() && request.auth.token.admin == true; }
 
     function cfg()      { return get(/databases/$(database)/documents/config/app).data; }
@@ -61,13 +65,13 @@ service cloud.firestore {
 
       allow read: if isAdmin() || (isSignedIn() && resource.data.uid == request.auth.uid);
 
-      allow create: if isVerified()
+      allow create: if isSignedIn()
                     && request.resource.data.uid == request.auth.uid
                     && request.resource.data.paymentStatus == 'pending'
                     && createWindowOpen();
 
       allow update: if isAdmin()
-                    || (isVerified()
+                    || (isSignedIn()
                         && resource.data.uid == request.auth.uid
                         && request.resource.data.uid == resource.data.uid
                         && request.resource.data.league == resource.data.league
@@ -75,7 +79,36 @@ service cloud.firestore {
                         && updateWindowOpen());
 
       allow delete: if isAdmin()
-                    || (isVerified() && resource.data.uid == request.auth.uid && updateWindowOpen());
+                    || (isSignedIn() && resource.data.uid == request.auth.uid && updateWindowOpen());
+    }
+
+    // ─── Rifa de Países (modo tradicional) ──────────────────────────────────────
+    // Pools are managed entirely by the cron (admin SDK, which bypasses rules).
+    // Clients only read them to show the current pool's progress.
+    match /pools/{poolId} {
+      allow read:  if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // Tickets: a user buys a PENDING ticket for themselves with no pool/team. The
+    // cron (admin SDK) bins paid tickets into pools and assigns the random team, so
+    // the client can never set poolId/teamId/paymentStatus. Updates are admin-only.
+    match /tickets/{ticketId} {
+      allow read: if isAdmin() || (isSignedIn() && resource.data.uid == request.auth.uid);
+
+      allow create: if isSignedIn()
+                    && request.resource.data.uid == request.auth.uid
+                    && request.resource.data.paymentStatus == 'pending'
+                    && request.resource.data.poolId == ''
+                    && request.resource.data.teamId == '';
+
+      allow update: if isAdmin();
+
+      allow delete: if isAdmin()
+                    || (isSignedIn()
+                        && resource.data.uid == request.auth.uid
+                        && resource.data.paymentStatus == 'pending'
+                        && resource.data.poolId == '');
     }
   }
 }

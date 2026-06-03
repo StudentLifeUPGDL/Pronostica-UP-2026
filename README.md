@@ -1,6 +1,6 @@
 # Quiniela Mundial 2026
 
-App de pronósticos del Mundial FIFA 2026: cuentas con verificación por correo, almacenamiento en
+App de pronósticos del Mundial FIFA 2026: cuentas con correo y contraseña, almacenamiento en
 la nube, puntaje automático, **ligas de "arreglos"** posteriores al inicio (R32 y R16) con premios
 aparte, y un **reporte privado de administrador**.
 
@@ -20,7 +20,7 @@ aparte, y un **reporte privado de administrador**.
 
 1. En [console.firebase.google.com](https://console.firebase.google.com) crea un proyecto.
 2. **Authentication → Sign-in method →** habilita **Email/Password**. (Opcional: personaliza en
-   español los correos de verificación y de restablecimiento.)
+   español el correo de restablecimiento de contraseña.)
 3. **Firestore Database →** crea la base de datos (modo producción).
 4. **Project settings → General → Your apps →** registra una app **Web** y copia el objeto de
    configuración (`apiKey`, `authDomain`, etc.).
@@ -91,7 +91,7 @@ corepack pnpm build    # genera dist/
 
 ## Reglas del juego (resumen)
 
-- **Cuentas:** correo + contraseña, con verificación por email (y recuperación de contraseña).
+- **Cuentas:** correo + contraseña (con recuperación de contraseña). No requiere verificar el correo.
 - **Quinielas:** ilimitadas por persona, máx. 5 con pago pendiente a la vez. Cada una se paga por
   separado vía el Google Form; el admin confirma el pago manualmente. Las pendientes vencidas se
   pueden anular tras la fecha límite.

@@ -73,6 +73,46 @@ export interface Prediction {
   points: number;                     // optional cache; standings are computed live from Results
 }
 
+// ─── Rifa de Países (modo tradicional) ────────────────────────────────────────
+// A "pool" is a batch of 48 tickets. A player buys as many tickets as they like;
+// each ticket costs `rifaFee`. Once a pool reaches 48 PAID tickets, the GitHub
+// Actions cron (scripts/managePools.mjs) randomly assigns the 48 World Cup teams
+// (one per ticket), emails each owner, freezes the pool, and opens the next one.
+// All assignment/binning is done by the trusted cron with the admin SDK — the
+// client NEVER writes poolId/teamId/paymentStatus, so nobody can pick their team.
+
+export type PoolStatus = 'open' | 'assigned';
+
+export const POOL_CAPACITY = 48; // one slot per qualified team
+
+export interface Ticket {
+  id: string;                 // folio RIFA-XXXXX (== Firestore doc id)
+  uid: string;                // owner's Firebase Auth uid
+  userEmail?: string;
+  userDisplayName?: string;
+  paymentStatus: PaymentStatus;
+  paidAt?: string;            // ISO — set by admin when the transfer is confirmed
+  paymentNote?: string;
+  poolId: string;             // '' until the cron bins it into a pool
+  poolIndex?: number;         // cache of the pool's sequential number (display)
+  teamId: string;             // '' until the pool is assigned
+  notified?: boolean;         // assignment email sent (cron sets this)
+  createdAt: string;          // ISO
+}
+
+export interface Pool {
+  id: string;                 // e.g. "pool-3" (== Firestore doc id)
+  index: number;              // sequential pool number (Pool #1, #2, …)
+  status: PoolStatus;
+  capacity: number;           // POOL_CAPACITY (48)
+  paidCount: number;          // paid tickets currently in this pool (0–48)
+  fee: number;                // snapshot of rifaFee when the pool filled
+  payoutSplit: number[];      // snapshot of rifaPayoutSplit [champ, runnerUp, third]
+  assignedAt?: string;        // ISO — when the 48 teams were drawn
+  assignedSeed?: string;      // hex seed of the shuffle (auditability)
+  createdAt: string;          // ISO
+}
+
 // ─── Real tournament results (admin-entered, drives scoring) ──────────────────
 
 export interface GroupResult {
@@ -126,6 +166,9 @@ export interface AppConfig {
   fees: AppFees;
   payoutPercent: number;     // share of the gross pool that is paid out (e.g. 0.90)
   payoutRoundTo: number;     // distributable prize rounded DOWN to this (e.g. 100)
+  rifaEnabled: boolean;      // show/hide the "Rifa de Países" mode
+  rifaFee: number;           // price per rifa ticket
+  rifaPayoutSplit: number[]; // how each pool's prize splits: [campeón, subcampeón, 3°]
 }
 
 export const DEFAULT_CONFIG: AppConfig = {
@@ -140,6 +183,9 @@ export const DEFAULT_CONFIG: AppConfig = {
   fees: { main: 100, r32: 200, r16: 300 },
   payoutPercent: 0.9,
   payoutRoundTo: 100,
+  rifaEnabled: true,
+  rifaFee: 50,
+  rifaPayoutSplit: [0.7, 0.2, 0.1],
 };
 
 // ─── Teams ────────────────────────────────────────────────────────────────────
@@ -608,4 +654,15 @@ export function makeFolio(league: League): string {
     code += FOLIO_ALPHABET[Math.floor(Math.random() * FOLIO_ALPHABET.length)];
   }
   return `${FOLIO_PREFIX[league]}-${code}`;
+}
+
+// Folio for a Rifa de Países ticket (RIFA-XXXXX). Same readable alphabet as the
+// quiniela folios; this is the Firestore doc id and the value the payment form
+// receives pre-filled.
+export function makeTicketFolio(): string {
+  let code = '';
+  for (let i = 0; i < 5; i++) {
+    code += FOLIO_ALPHABET[Math.floor(Math.random() * FOLIO_ALPHABET.length)];
+  }
+  return `RIFA-${code}`;
 }

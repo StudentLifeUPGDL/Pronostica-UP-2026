@@ -1,0 +1,42 @@
+name: Manage Rifa pools
+
+# Bins paid Rifa tickets into pools of 48, draws the teams once a pool fills, and
+# emails each owner (via Resend). All assignment happens here so it can't be done
+# from the client. See scripts/managePools.mjs.
+
+on:
+  schedule:
+    # Every 5 min (UTC). GitHub throttles schedules below ~5 min and may delay runs
+    # under load, so assignment is "near-immediate", not instant. Trigger manually
+    # from the Actions tab (Run workflow) for an immediate draw.
+    - cron: '*/5 * * * *'
+  workflow_dispatch: {}
+
+# Don't overlap runs (avoids double-assigning a pool mid-write).
+concurrency:
+  group: manage-pools
+  cancel-in-progress: false
+
+jobs:
+  manage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # The script needs firebase-admin (Firestore) + nodemailer (Gmail SMTP).
+      - name: Install deps
+        run: npm install --no-save --no-package-lock firebase-admin@^13.10.0 nodemailer@^6.9.0
+
+      - name: Manage pools
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          GMAIL_FROM_NAME: ${{ secrets.GMAIL_FROM_NAME }}
+          APP_URL: ${{ secrets.APP_URL }}
+        run: node scripts/managePools.mjs --write
