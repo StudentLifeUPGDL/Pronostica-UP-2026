@@ -14,7 +14,7 @@ export function PaymentCta({ prediction, email, compact }: {
 
   if (!paymentConfigured || !url) {
     return (
-      <span style={{ color: '#4a7d65', fontSize: '0.7rem', fontFamily: 'DM Mono' }}>
+      <span style={{ color: '#4a7d65', fontSize: '0.7rem', fontFamily: "'Twemoji Country Flags', 'DM Mono'" }}>
         pago no configurado
       </span>
     );
@@ -26,7 +26,7 @@ export function PaymentCta({ prediction, email, compact }: {
       style={{
         background: 'rgba(212,242,38,0.12)', color: '#d4f226',
         border: '1px solid rgba(212,242,38,0.3)',
-        fontFamily: 'Oswald, sans-serif', letterSpacing: '0.04em',
+        fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", letterSpacing: '0.04em',
         fontSize: compact ? '0.72rem' : '0.8rem',
         padding: compact ? '4px 10px' : '8px 14px',
       }}>

@@ -38,7 +38,7 @@ function money(n: number, currency: string) {
 function StatusBadge({ status }: { status: PaymentStatus }) {
   const s = STATUS_STYLE[status];
   return (
-    <span className="px-2 py-0.5 rounded-full" style={{ background: s.bg, color: s.color, fontSize: '0.6rem', fontFamily: 'DM Mono', letterSpacing: '0.05em' }}>
+    <span className="px-2 py-0.5 rounded-full" style={{ background: s.bg, color: s.color, fontSize: '0.6rem', fontFamily: "'Twemoji Country Flags', 'DM Mono'", letterSpacing: '0.05em' }}>
       {s.label}
     </span>
   );
@@ -56,7 +56,7 @@ function FolioChip({ id }: { id: string }) {
   return (
     <button onClick={copy} title="Copiar folio"
       className="inline-flex items-center gap-1.5 rounded-md cursor-pointer transition-all"
-      style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', fontFamily: 'DM Mono', color: '#d4f226', fontSize: '0.72rem', padding: '3px 8px' }}>
+      style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', fontFamily: "'Twemoji Country Flags', 'DM Mono'", color: '#d4f226', fontSize: '0.72rem', padding: '3px 8px' }}>
       {id}
       {copied ? <Check size={12} style={{ color: '#4ade80' }} /> : <Copy size={12} style={{ color: '#7eb89a' }} />}
     </button>
@@ -66,12 +66,12 @@ function FolioChip({ id }: { id: string }) {
 function PaymentLink({ ticketId, email }: { ticketId: string; email?: string }) {
   const url = buildPaymentUrl(ticketId, RIFA_LABEL, email);
   if (!paymentConfigured || !url) {
-    return <span style={{ color: '#4a7d65', fontSize: '0.7rem', fontFamily: 'DM Mono' }}>pago no configurado</span>;
+    return <span style={{ color: '#4a7d65', fontSize: '0.7rem', fontFamily: "'Twemoji Country Flags', 'DM Mono'" }}>pago no configurado</span>;
   }
   return (
     <a href={url} target="_blank" rel="noopener noreferrer"
       className="inline-flex items-center gap-1.5 rounded-lg cursor-pointer transition-all"
-      style={{ background: 'rgba(212,242,38,0.12)', color: '#d4f226', border: '1px solid rgba(212,242,38,0.3)', fontFamily: 'Oswald, sans-serif', letterSpacing: '0.04em', fontSize: '0.72rem', padding: '4px 10px' }}>
+      style={{ background: 'rgba(212,242,38,0.12)', color: '#d4f226', border: '1px solid rgba(212,242,38,0.3)', fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", letterSpacing: '0.04em', fontSize: '0.72rem', padding: '4px 10px' }}>
       {PAYMENT_CTA_LABEL}
     </a>
   );
@@ -97,18 +97,18 @@ function TicketCard({ ticket, results, email, onDelete }: {
         </div>
         <div className="flex-1 min-w-0">
           {team ? (
-            <div style={{ fontFamily: 'Oswald, sans-serif', color: '#e0f0e8', fontSize: '1.05rem', letterSpacing: '0.03em' }}>{team.name}</div>
+            <div style={{ fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", color: '#e0f0e8', fontSize: '1.05rem', letterSpacing: '0.03em' }}>{team.name}</div>
           ) : (
-            <div style={{ fontFamily: 'Oswald, sans-serif', color: '#9cc4b2', fontSize: '1rem', letterSpacing: '0.03em' }}>Equipo por asignar</div>
+            <div style={{ fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", color: '#9cc4b2', fontSize: '1rem', letterSpacing: '0.03em' }}>Equipo por asignar</div>
           )}
           <div className="flex items-center gap-2 mt-1 flex-wrap">
-            <span style={{ color: '#7eb89a', fontSize: '0.68rem', fontFamily: 'DM Mono' }}>{poolLabel}</span>
+            <span style={{ color: '#7eb89a', fontSize: '0.68rem', fontFamily: "'Twemoji Country Flags', 'DM Mono'" }}>{poolLabel}</span>
             <StatusBadge status={ticket.paymentStatus} />
           </div>
         </div>
         {status && (
           <div className="text-right">
-            <div style={{ color: status.color, fontFamily: 'Oswald, sans-serif', fontSize: '0.8rem', letterSpacing: '0.02em' }}>{status.label}</div>
+            <div style={{ color: status.color, fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", fontSize: '0.8rem', letterSpacing: '0.02em' }}>{status.label}</div>
           </div>
         )}
       </div>
@@ -118,7 +118,7 @@ function TicketCard({ ticket, results, email, onDelete }: {
         {ticket.paymentStatus === 'pending' && <PaymentLink ticketId={ticket.id} email={email} />}
         <div className="flex-1" />
         {canDelete && (
-          <button onClick={onDelete} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg cursor-pointer" style={{ background: 'rgba(230,57,70,0.08)', color: '#e63946', fontFamily: 'Oswald, sans-serif', fontSize: '0.72rem', letterSpacing: '0.05em', border: '1px solid rgba(230,57,70,0.15)' }}>
+          <button onClick={onDelete} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg cursor-pointer" style={{ background: 'rgba(230,57,70,0.08)', color: '#e63946', fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", fontSize: '0.72rem', letterSpacing: '0.05em', border: '1px solid rgba(230,57,70,0.15)' }}>
             <Trash2 size={12} /> ELIMINAR
           </button>
         )}
@@ -160,7 +160,7 @@ export function RifaPage({ tickets, pools, config, results, email, onBuy, onDele
     <div className="max-w-4xl mx-auto px-4 py-6">
       <div className="flex items-center gap-2 mb-1">
         <Dice5 size={22} style={{ color: '#f5a623' }} />
-        <h1 style={{ fontFamily: 'Oswald, sans-serif', color: '#f5a623', fontSize: '1.8rem', fontWeight: 700, letterSpacing: '0.04em' }}>QUINIELA</h1>
+        <h1 style={{ fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", color: '#f5a623', fontSize: '1.8rem', fontWeight: 700, letterSpacing: '0.04em' }}>QUINIELA</h1>
       </div>
       <p style={{ color: '#7eb89a', fontSize: '0.85rem', marginBottom: '16px', maxWidth: '680px' }}>
         Compra un boleto y se te asigna <strong style={{ color: '#d4f226' }}>una selección al azar</strong> del Mundial.
@@ -177,19 +177,19 @@ export function RifaPage({ tickets, pools, config, results, email, onBuy, onDele
       <div className="rounded-2xl p-5 mb-6" style={{ background: 'linear-gradient(135deg, #0d5035, #0b4730)', border: '1px solid rgba(245,166,35,0.25)' }}>
         <div className="flex items-center justify-between flex-wrap gap-3 mb-3">
           <div>
-            <div style={{ fontFamily: 'Oswald, sans-serif', color: '#e0f0e8', fontSize: '1.1rem', letterSpacing: '0.04em' }}>POOL ACTUAL · #{currentIndex}</div>
-            <div style={{ color: '#7eb89a', fontSize: '0.78rem', fontFamily: 'DM Mono' }}>{filled}/{POOL_CAPACITY} boletos pagados</div>
+            <div style={{ fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", color: '#e0f0e8', fontSize: '1.1rem', letterSpacing: '0.04em' }}>POOL ACTUAL · #{currentIndex}</div>
+            <div style={{ color: '#7eb89a', fontSize: '0.78rem', fontFamily: "'Twemoji Country Flags', 'DM Mono'" }}>{filled}/{POOL_CAPACITY} boletos pagados</div>
           </div>
           <div className="text-right">
-            <div style={{ color: '#4a7d65', fontSize: '0.64rem', fontFamily: 'DM Mono', letterSpacing: '0.05em' }}>PREMIO MAYOR · 1° LUGAR</div>
-            <div style={{ color: '#d4f226', fontFamily: 'Oswald, sans-serif', fontSize: '1.05rem', fontWeight: 700 }}>{money(config.rifaPrizes.first, config.currency)}</div>
+            <div style={{ color: '#4a7d65', fontSize: '0.64rem', fontFamily: "'Twemoji Country Flags', 'DM Mono'", letterSpacing: '0.05em' }}>PREMIO MAYOR · 1° LUGAR</div>
+            <div style={{ color: '#d4f226', fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", fontSize: '1.05rem', fontWeight: 700 }}>{money(config.rifaPrizes.first, config.currency)}</div>
           </div>
         </div>
 
         <div className="h-3 rounded-full overflow-hidden mb-1" style={{ background: 'rgba(0,0,0,0.25)' }}>
           <div className="h-full transition-all" style={{ width: `${progress}%`, background: 'linear-gradient(90deg, #f5a623, #d4f226)' }} />
         </div>
-        <div className="flex items-center justify-between mb-4" style={{ fontFamily: 'DM Mono', fontSize: '0.66rem', color: '#7eb89a' }}>
+        <div className="flex items-center justify-between mb-4" style={{ fontFamily: "'Twemoji Country Flags', 'DM Mono'", fontSize: '0.66rem', color: '#7eb89a' }}>
           <span>{progress}%</span>
           <span>faltan {Math.max(0, POOL_CAPACITY - filled)} para asignar</span>
         </div>
@@ -197,7 +197,7 @@ export function RifaPage({ tickets, pools, config, results, email, onBuy, onDele
         <div className="flex items-center gap-3 flex-wrap">
           <button onClick={handleBuy} disabled={busy}
             className="flex items-center gap-2 px-5 py-3 rounded-xl cursor-pointer transition-all disabled:opacity-50"
-            style={{ background: '#f5a623', color: '#062b1a', fontFamily: 'Oswald, sans-serif', fontWeight: 700, fontSize: '0.9rem', letterSpacing: '0.05em' }}>
+            style={{ background: '#f5a623', color: '#062b1a', fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", fontWeight: 700, fontSize: '0.9rem', letterSpacing: '0.05em' }}>
             {busy ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
             COMPRAR BOLETO · {money(config.rifaFee, config.currency)}
           </button>
@@ -212,25 +212,25 @@ export function RifaPage({ tickets, pools, config, results, email, onBuy, onDele
       <div className="rounded-2xl overflow-hidden mb-6" style={{ background: '#0d5035', border: '1px solid rgba(255,255,255,0.07)' }}>
         <div className="px-5 py-3 flex items-center gap-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
           <Trophy size={16} style={{ color: '#f5a623' }} />
-          <span style={{ fontFamily: 'Oswald, sans-serif', color: '#f5a623', fontSize: '1rem', letterSpacing: '0.05em' }}>PREMIOS · SEGÚN QUÉ TAN LEJOS LLEGUE TU PAÍS</span>
+          <span style={{ fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", color: '#f5a623', fontSize: '1rem', letterSpacing: '0.05em' }}>PREMIOS · SEGÚN QUÉ TAN LEJOS LLEGUE TU PAÍS</span>
         </div>
         <div className="divide-y" style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
           {ladder.map(tier => (
             <div key={tier.place} className="px-5 py-3 flex items-center gap-3" style={{ borderTop: '1px solid rgba(255,255,255,0.04)' }}>
-              <div className="w-14 text-center rounded-lg py-1 flex-shrink-0" style={{ background: tier.kind === 'cash' ? 'rgba(245,166,35,0.12)' : 'rgba(212,242,38,0.08)', fontFamily: 'Oswald, sans-serif', color: tier.kind === 'cash' ? '#f5a623' : '#d4f226', fontSize: '0.95rem', fontWeight: 700 }}>
+              <div className="w-14 text-center rounded-lg py-1 flex-shrink-0" style={{ background: tier.kind === 'cash' ? 'rgba(245,166,35,0.12)' : 'rgba(212,242,38,0.08)', fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", color: tier.kind === 'cash' ? '#f5a623' : '#d4f226', fontSize: '0.95rem', fontWeight: 700 }}>
                 {tier.place}
               </div>
               <div className="flex-1 min-w-0 flex items-center gap-2">
                 {tier.kind === 'cash'
                   ? <Trophy size={14} style={{ color: '#f5a623', flexShrink: 0 }} />
                   : <Coffee size={14} style={{ color: '#d4f226', flexShrink: 0 }} />}
-                <span style={{ fontFamily: 'Oswald, sans-serif', color: '#e0f0e8', fontSize: '0.86rem', letterSpacing: '0.02em' }}>{tier.label}</span>
+                <span style={{ fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", color: '#e0f0e8', fontSize: '0.86rem', letterSpacing: '0.02em' }}>{tier.label}</span>
               </div>
               <div className="text-right flex-shrink-0">
                 {tier.kind === 'cash' ? (
-                  <span style={{ color: '#f5a623', fontFamily: 'Oswald, sans-serif', fontSize: '0.95rem', fontWeight: 700 }}>{money(tier.amount, config.currency)}</span>
+                  <span style={{ color: '#f5a623', fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", fontSize: '0.95rem', fontWeight: 700 }}>{money(tier.amount, config.currency)}</span>
                 ) : (
-                  <span style={{ color: '#d4f226', fontFamily: 'DM Mono', fontSize: '0.74rem' }}>vale {money(tier.amount, config.currency)} Nessu · ×{tier.seats}</span>
+                  <span style={{ color: '#d4f226', fontFamily: "'Twemoji Country Flags', 'DM Mono'", fontSize: '0.74rem' }}>vale {money(tier.amount, config.currency)} Nessu · ×{tier.seats}</span>
                 )}
               </div>
             </div>
@@ -250,7 +250,7 @@ export function RifaPage({ tickets, pools, config, results, email, onBuy, onDele
         <div className="rounded-2xl overflow-hidden mb-6" style={{ background: '#0d5035', border: '1px solid rgba(245,166,35,0.2)' }}>
           <div className="px-5 py-3 flex items-center gap-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
             <Trophy size={16} style={{ color: '#f5a623' }} />
-            <span style={{ fontFamily: 'Oswald, sans-serif', color: '#f5a623', fontSize: '1rem', letterSpacing: '0.05em' }}>CÓMO VA EL PREMIO</span>
+            <span style={{ fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", color: '#f5a623', fontSize: '1rem', letterSpacing: '0.05em' }}>CÓMO VA EL PREMIO</span>
           </div>
           <div className="p-4 flex flex-col gap-2">
             {([
@@ -260,18 +260,18 @@ export function RifaPage({ tickets, pools, config, results, email, onBuy, onDele
               ['4°', places.fourth, money(config.rifaPrizes.fourth, config.currency)],
             ] as const).map(([pos, teamId, prize]) => (
               <div key={pos} className="flex items-center gap-3 px-3 py-2 rounded-lg" style={{ background: 'rgba(255,255,255,0.03)' }}>
-                <span style={{ fontFamily: 'Oswald, sans-serif', color: '#f5a623', fontSize: '0.9rem', fontWeight: 700, minWidth: '28px' }}>{pos}</span>
+                <span style={{ fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", color: '#f5a623', fontSize: '0.9rem', fontWeight: 700, minWidth: '28px' }}>{pos}</span>
                 <span className="flex-1" style={{ color: '#e0f0e8', fontSize: '0.86rem' }}>
                   {teamId ? `${getTeam(teamId).flag} ${getTeam(teamId).name}` : <span style={{ color: '#4a7d65', fontStyle: 'italic' }}>por definir</span>}
                 </span>
-                <span style={{ color: '#d4f226', fontFamily: 'DM Mono', fontSize: '0.74rem' }}>{prize}</span>
+                <span style={{ color: '#d4f226', fontFamily: "'Twemoji Country Flags', 'DM Mono'", fontSize: '0.74rem' }}>{prize}</span>
               </div>
             ))}
             {(places.quartersOut.length > 0 || places.roundOf16Out.length > 0) && (
               <div className="mt-1 px-3 py-2.5 rounded-lg" style={{ background: 'rgba(212,242,38,0.05)' }}>
                 <div className="flex items-center gap-1.5 mb-1.5">
                   <Coffee size={13} style={{ color: '#d4f226' }} />
-                  <span style={{ color: '#d4f226', fontSize: '0.74rem', fontFamily: 'Oswald, sans-serif', letterSpacing: '0.04em' }}>VALES NESSU (5°–16°)</span>
+                  <span style={{ color: '#d4f226', fontSize: '0.74rem', fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", letterSpacing: '0.04em' }}>VALES NESSU (5°–16°)</span>
                 </div>
                 <div className="flex flex-wrap gap-1.5">
                   {[...places.quartersOut, ...places.roundOf16Out].map(id => (
@@ -289,13 +289,13 @@ export function RifaPage({ tickets, pools, config, results, email, onBuy, onDele
       {/* ── My tickets ── */}
       <div className="flex items-center gap-2 mb-3">
         <TicketIcon size={16} style={{ color: '#f5a623' }} />
-        <h2 style={{ fontFamily: 'Oswald, sans-serif', color: '#f5a623', fontSize: '1.1rem', letterSpacing: '0.05em' }}>MIS BOLETOS ({tickets.length})</h2>
+        <h2 style={{ fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", color: '#f5a623', fontSize: '1.1rem', letterSpacing: '0.05em' }}>MIS BOLETOS ({tickets.length})</h2>
       </div>
 
       {tickets.length === 0 ? (
         <div className="rounded-2xl p-10 text-center" style={{ background: '#0d5035', border: '2px dashed rgba(245,166,35,0.2)' }}>
           <Dice5 size={40} style={{ color: '#2a5a3a', margin: '0 auto 14px' }} />
-          <div style={{ fontFamily: 'Oswald, sans-serif', color: '#4a7d65', fontSize: '1.05rem', letterSpacing: '0.05em', marginBottom: '6px' }}>AÚN NO TIENES BOLETOS</div>
+          <div style={{ fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", color: '#4a7d65', fontSize: '1.05rem', letterSpacing: '0.05em', marginBottom: '6px' }}>AÚN NO TIENES BOLETOS</div>
           <p style={{ color: '#3a6b55', fontSize: '0.84rem' }}>Compra tu primer boleto y deja que la suerte te dé tu selección.</p>
         </div>
       ) : (

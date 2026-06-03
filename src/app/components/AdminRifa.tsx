@@ -86,13 +86,13 @@ export function AdminRifa({ config, results }: { config: AppConfig; results: Res
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="flex items-center gap-2">
           <Dice5 size={18} style={{ color: '#f5a623' }} />
-          <span style={{ fontFamily: 'Oswald, sans-serif', color: '#f5a623', fontSize: '1.1rem', letterSpacing: '0.05em' }}>QUINIELA (PRIVADO)</span>
+          <span style={{ fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", color: '#f5a623', fontSize: '1.1rem', letterSpacing: '0.05em' }}>QUINIELA (PRIVADO)</span>
         </div>
         <div className="flex gap-2">
-          <button onClick={load} disabled={busy} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg cursor-pointer disabled:opacity-50" style={{ background: '#0d5035', color: '#9cc4b2', border: '1px solid rgba(255,255,255,0.1)', fontFamily: 'Oswald, sans-serif', fontSize: '0.76rem' }}>
+          <button onClick={load} disabled={busy} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg cursor-pointer disabled:opacity-50" style={{ background: '#0d5035', color: '#9cc4b2', border: '1px solid rgba(255,255,255,0.1)', fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", fontSize: '0.76rem' }}>
             <RefreshCw size={13} /> ACTUALIZAR
           </button>
-          <button onClick={exportCsv} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg cursor-pointer" style={{ background: 'rgba(212,242,38,0.12)', color: '#d4f226', border: '1px solid rgba(212,242,38,0.3)', fontFamily: 'Oswald, sans-serif', fontSize: '0.76rem' }}>
+          <button onClick={exportCsv} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg cursor-pointer" style={{ background: 'rgba(212,242,38,0.12)', color: '#d4f226', border: '1px solid rgba(212,242,38,0.3)', fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", fontSize: '0.76rem' }}>
             <Download size={13} /> EXPORTAR CSV
           </button>
         </div>
@@ -113,7 +113,7 @@ export function AdminRifa({ config, results }: { config: AppConfig; results: Res
       {/* ── Pools overview ── */}
       <section className="rounded-xl overflow-hidden" style={{ background: '#0d5035', border: '1px solid rgba(255,255,255,0.07)' }}>
         <div className="px-5 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
-          <span style={{ fontFamily: 'Oswald, sans-serif', color: '#f5a623', fontSize: '0.95rem', letterSpacing: '0.05em' }}>POOLS ({pools.length})</span>
+          <span style={{ fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", color: '#f5a623', fontSize: '0.95rem', letterSpacing: '0.05em' }}>POOLS ({pools.length})</span>
         </div>
         {pools.length === 0 ? (
           <div className="px-5 py-6 text-center" style={{ color: '#4a7d65', fontSize: '0.82rem' }}>Aún no hay pools. Se crean solos cuando hay boletos pagados.</div>
@@ -121,13 +121,13 @@ export function AdminRifa({ config, results }: { config: AppConfig; results: Res
           <div className="flex flex-col">
             {pools.map(pool => (
               <div key={pool.id} className="px-5 py-3 flex items-center justify-between flex-wrap gap-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                <span style={{ fontFamily: 'Oswald, sans-serif', color: '#e0f0e8', fontSize: '0.9rem', letterSpacing: '0.04em' }}>
+                <span style={{ fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", color: '#e0f0e8', fontSize: '0.9rem', letterSpacing: '0.04em' }}>
                   Pool #{pool.index}
-                  <span style={{ color: pool.status === 'assigned' ? '#4ade80' : '#f5a623', fontFamily: 'DM Mono', fontSize: '0.68rem', marginLeft: '8px' }}>
+                  <span style={{ color: pool.status === 'assigned' ? '#4ade80' : '#f5a623', fontFamily: "'Twemoji Country Flags', 'DM Mono'", fontSize: '0.68rem', marginLeft: '8px' }}>
                     {pool.status === 'assigned' ? 'ASIGNADO' : `${pool.paidCount}/${POOL_CAPACITY} ABIERTO`}
                   </span>
                 </span>
-                <span style={{ fontFamily: 'DM Mono', fontSize: '0.68rem', color: '#7eb89a' }}>
+                <span style={{ fontFamily: "'Twemoji Country Flags', 'DM Mono'", fontSize: '0.68rem', color: '#7eb89a' }}>
                   {money((pool.fee ?? config.rifaFee) * POOL_CAPACITY, config.currency)} recaudado si se llena
                 </span>
               </div>
@@ -139,10 +139,10 @@ export function AdminRifa({ config, results }: { config: AppConfig; results: Res
       {/* ── Prizes & winners ── */}
       <section className="rounded-xl overflow-hidden" style={{ background: '#0d5035', border: '1px solid rgba(245,166,35,0.2)' }}>
         <div className="px-5 py-3 flex items-center justify-between flex-wrap gap-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
-          <span className="flex items-center gap-2" style={{ fontFamily: 'Oswald, sans-serif', color: '#f5a623', fontSize: '0.95rem', letterSpacing: '0.05em' }}>
+          <span className="flex items-center gap-2" style={{ fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", color: '#f5a623', fontSize: '0.95rem', letterSpacing: '0.05em' }}>
             <Trophy size={15} /> PREMIOS Y GANADORES
           </span>
-          <span style={{ fontFamily: 'DM Mono', fontSize: '0.68rem', color: '#7eb89a' }}>
+          <span style={{ fontFamily: "'Twemoji Country Flags', 'DM Mono'", fontSize: '0.68rem', color: '#7eb89a' }}>
             Efectivo total: {money(rifaCashTotal(config.rifaPrizes), config.currency)} + vales Nessu
           </span>
         </div>
@@ -156,13 +156,13 @@ export function AdminRifa({ config, results }: { config: AppConfig; results: Res
             const w = holderOf(teamId);
             return (
               <div key={i} className="px-5 py-2.5 flex items-center justify-between flex-wrap gap-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                <span style={{ color: '#e0f0e8', fontSize: '0.82rem', fontFamily: 'Oswald, sans-serif', letterSpacing: '0.02em', minWidth: '150px' }}>
-                  {label} <span style={{ color: '#d4f226', fontFamily: 'DM Mono', fontSize: '0.7rem' }}>{money(amount, config.currency)}</span>
+                <span style={{ color: '#e0f0e8', fontSize: '0.82rem', fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", letterSpacing: '0.02em', minWidth: '150px' }}>
+                  {label} <span style={{ color: '#d4f226', fontFamily: "'Twemoji Country Flags', 'DM Mono'", fontSize: '0.7rem' }}>{money(amount, config.currency)}</span>
                 </span>
                 <span style={{ color: '#9cc4b2', fontSize: '0.78rem' }}>
                   {teamId ? <>{getTeam(teamId).flag} {getTeam(teamId).shortName} · </> : null}
                   {w ? <strong style={{ color: '#e0f0e8' }}>{w.name}</strong> : <span style={{ color: '#4a7d65' }}>{teamId ? 'sin boleto asignado' : 'por definir'}</span>}
-                  {w?.email ? <span style={{ color: '#4a7d65', fontFamily: 'DM Mono', fontSize: '0.66rem' }}> · {w.email}</span> : null}
+                  {w?.email ? <span style={{ color: '#4a7d65', fontFamily: "'Twemoji Country Flags', 'DM Mono'", fontSize: '0.66rem' }}> · {w.email}</span> : null}
                 </span>
               </div>
             );
@@ -171,7 +171,7 @@ export function AdminRifa({ config, results }: { config: AppConfig; results: Res
             <div className="px-5 py-3" style={{ background: 'rgba(212,242,38,0.04)' }}>
               <div className="flex items-center gap-1.5 mb-2">
                 <Coffee size={13} style={{ color: '#d4f226' }} />
-                <span style={{ color: '#d4f226', fontSize: '0.74rem', fontFamily: 'Oswald, sans-serif', letterSpacing: '0.04em' }}>
+                <span style={{ color: '#d4f226', fontSize: '0.74rem', fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", letterSpacing: '0.04em' }}>
                   VALES NESSU 5°–16° ({money(config.rifaPrizes.consolation, config.currency)} c/u)
                 </span>
               </div>
@@ -194,12 +194,12 @@ export function AdminRifa({ config, results }: { config: AppConfig; results: Res
       {/* ── Ticket payment management ── */}
       <section className="rounded-xl overflow-hidden" style={{ background: '#0d5035', border: '1px solid rgba(255,255,255,0.07)' }}>
         <div className="px-5 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
-          <span style={{ fontFamily: 'Oswald, sans-serif', color: '#f5a623', fontSize: '0.95rem', letterSpacing: '0.05em' }}>BOLETOS ({tickets.length})</span>
+          <span style={{ fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", color: '#f5a623', fontSize: '0.95rem', letterSpacing: '0.05em' }}>BOLETOS ({tickets.length})</span>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full" style={{ borderCollapse: 'collapse', fontFamily: 'Nunito Sans' }}>
+          <table className="w-full" style={{ borderCollapse: 'collapse', fontFamily: "'Twemoji Country Flags', 'Nunito Sans'" }}>
             <thead>
-              <tr style={{ color: '#4a7d65', fontFamily: 'DM Mono', fontSize: '0.62rem' }}>
+              <tr style={{ color: '#4a7d65', fontFamily: "'Twemoji Country Flags', 'DM Mono'", fontSize: '0.62rem' }}>
                 {['FOLIO', 'POOL', 'EQUIPO', 'PARTICIPANTE', 'CUOTA', 'ESTADO'].map(h => (
                   <th key={h} className="text-left px-3 py-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>{h}</th>
                 ))}
@@ -210,17 +210,17 @@ export function AdminRifa({ config, results }: { config: AppConfig; results: Res
                 const w = who(t);
                 return (
                   <tr key={t.id}>
-                    <td className="px-3 py-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', color: '#d4f226', fontSize: '0.72rem', fontFamily: 'DM Mono', whiteSpace: 'nowrap' }}>{t.id}</td>
-                    <td className="px-3 py-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', color: '#9cc4b2', fontSize: '0.74rem', fontFamily: 'DM Mono' }}>{t.poolIndex ? `#${t.poolIndex}` : '—'}</td>
+                    <td className="px-3 py-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', color: '#d4f226', fontSize: '0.72rem', fontFamily: "'Twemoji Country Flags', 'DM Mono'", whiteSpace: 'nowrap' }}>{t.id}</td>
+                    <td className="px-3 py-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', color: '#9cc4b2', fontSize: '0.74rem', fontFamily: "'Twemoji Country Flags', 'DM Mono'" }}>{t.poolIndex ? `#${t.poolIndex}` : '—'}</td>
                     <td className="px-3 py-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', fontSize: '0.78rem' }}>{teamFlag(t.teamId)}</td>
                     <td className="px-3 py-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
                       <div style={{ color: '#c0d8cc', fontSize: '0.78rem' }}>{w.name}</div>
-                      <div style={{ color: '#4a7d65', fontSize: '0.64rem', fontFamily: 'DM Mono' }}>{w.email}</div>
+                      <div style={{ color: '#4a7d65', fontSize: '0.64rem', fontFamily: "'Twemoji Country Flags', 'DM Mono'" }}>{w.email}</div>
                     </td>
-                    <td className="px-3 py-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', color: '#9cc4b2', fontSize: '0.74rem', fontFamily: 'DM Mono' }}>{money(config.rifaFee, config.currency)}</td>
+                    <td className="px-3 py-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', color: '#9cc4b2', fontSize: '0.74rem', fontFamily: "'Twemoji Country Flags', 'DM Mono'" }}>{money(config.rifaFee, config.currency)}</td>
                     <td className="px-3 py-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
                       <select value={t.paymentStatus} disabled={busy} onChange={e => changeStatus(t.id, e.target.value as PaymentStatus)}
-                        style={{ background: '#0b4730', color: '#e0f0e8', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', padding: '4px 8px', fontFamily: 'DM Mono', fontSize: '0.72rem' }}>
+                        style={{ background: '#0b4730', color: '#e0f0e8', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', padding: '4px 8px', fontFamily: "'Twemoji Country Flags', 'DM Mono'", fontSize: '0.72rem' }}>
                         <option value="pending">pendiente</option>
                         <option value="paid">pagado</option>
                         <option value="void">anulado</option>

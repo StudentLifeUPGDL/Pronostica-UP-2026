@@ -34,7 +34,7 @@ interface WizardState {
 function Shell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-4 text-center"
-      style={{ background: '#0a3d28', fontFamily: 'Nunito Sans, sans-serif' }}>
+      style={{ background: '#0a3d28', fontFamily: "'Twemoji Country Flags', Nunito Sans, sans-serif" }}>
       {children}
     </div>
   );
@@ -44,7 +44,7 @@ function FirebaseSetupNotice() {
   return (
     <Shell>
       <div className="max-w-lg">
-        <h1 style={{ fontFamily: 'Oswald, sans-serif', color: '#f5a623', fontSize: '1.6rem', letterSpacing: '0.04em' }}>
+        <h1 style={{ fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", color: '#f5a623', fontSize: '1.6rem', letterSpacing: '0.04em' }}>
           FALTA CONFIGURAR FIREBASE
         </h1>
         <p style={{ color: '#c0d8cc', fontSize: '0.9rem', marginTop: '12px', lineHeight: 1.6 }}>
@@ -189,7 +189,7 @@ export default function App() {
   if (loading) {
     return (
       <Shell>
-        <div style={{ fontFamily: 'Oswald, sans-serif', color: '#7eb89a', letterSpacing: '0.1em' }}>CARGANDO…</div>
+        <div style={{ fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", color: '#7eb89a', letterSpacing: '0.1em' }}>CARGANDO…</div>
       </Shell>
     );
   }
@@ -199,7 +199,7 @@ export default function App() {
   const showAdmin = isAdmin && currentPage === 'admin';
 
   return (
-    <div className="min-h-screen" style={{ background: '#0a3d28', fontFamily: 'Nunito Sans, sans-serif' }}>
+    <div className="min-h-screen" style={{ background: '#0a3d28', fontFamily: "'Twemoji Country Flags', Nunito Sans, sans-serif" }}>
       <Header
         currentPage={currentPage}
         onNavigate={handleNavigate}
@@ -277,7 +277,7 @@ export default function App() {
                     <button key={key} onClick={() => setAdminTab(key)}
                       className="px-4 py-2 rounded-lg cursor-pointer"
                       style={{
-                        fontFamily: 'Oswald, sans-serif', fontSize: '0.82rem', letterSpacing: '0.05em',
+                        fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", fontSize: '0.82rem', letterSpacing: '0.05em',
                         background: adminTab === key ? '#f5a623' : '#0d5035',
                         color: adminTab === key ? '#062b1a' : '#9cc4b2',
                         border: '1px solid rgba(245,166,35,0.2)',
@@ -302,7 +302,7 @@ export default function App() {
 
       <footer style={{ borderTop: '1px solid rgba(255,255,255,0.06)', padding: '16px 24px', textAlign: 'center' }}>
         <div className="h-1 mb-3" style={{ background: 'repeating-linear-gradient(90deg, #f5a623 0px, #f5a623 8px, #d4f226 8px, #d4f226 16px, #0a3d28 16px, #0a3d28 24px)', borderRadius: '999px', maxWidth: '200px', margin: '0 auto 12px' }} />
-        <p style={{ color: '#3a6b55', fontSize: '0.72rem', fontFamily: 'DM Mono, monospace', letterSpacing: '0.08em' }}>
+        <p style={{ color: '#3a6b55', fontSize: '0.72rem', fontFamily: "'Twemoji Country Flags', 'DM Mono', monospace", letterSpacing: '0.08em' }}>
           PANTERA MUNDIALISTA · UNIVERSIDAD PANAMERICANA · MUNDIAL FIFA 2026 · EE.UU. · CANADÁ · MÉXICO
         </p>
       </footer>

@@ -21,7 +21,7 @@ function Card({ icon, title, children }: { icon: ReactNode; title: string; child
         <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(245,166,35,0.15)' }}>
           {icon}
         </div>
-        <span style={{ fontFamily: 'Oswald, sans-serif', color: '#f5a623', fontSize: '1rem', letterSpacing: '0.05em' }}>
+        <span style={{ fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", color: '#f5a623', fontSize: '1rem', letterSpacing: '0.05em' }}>
           {title}
         </span>
       </div>
@@ -36,7 +36,7 @@ function BulletItem({ children }: { children: ReactNode }) {
   return (
     <div className="flex items-start gap-2 mb-2">
       <CheckCircle2 size={14} style={{ color: '#4ade80', marginTop: '3px', flexShrink: 0 }} />
-      <span style={{ color: '#c0d8cc', fontSize: '0.85rem', fontFamily: 'Nunito Sans, sans-serif', lineHeight: 1.5 }}>
+      <span style={{ color: '#c0d8cc', fontSize: '0.85rem', fontFamily: "'Twemoji Country Flags', 'Nunito Sans', sans-serif", lineHeight: 1.5 }}>
         {children}
       </span>
     </div>
@@ -46,12 +46,12 @@ function BulletItem({ children }: { children: ReactNode }) {
 function PointRow({ label, pts, desc }: { label: string; pts: number; desc: string }) {
   return (
     <div className="flex items-center gap-3 py-2.5" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-      <div className="w-12 text-center rounded-lg py-1" style={{ background: 'rgba(245,166,35,0.12)', fontFamily: 'Oswald, sans-serif', color: '#f5a623', fontSize: '1rem', fontWeight: 700 }}>
+      <div className="w-12 text-center rounded-lg py-1" style={{ background: 'rgba(245,166,35,0.12)', fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", color: '#f5a623', fontSize: '1rem', fontWeight: 700 }}>
         {pts}
       </div>
       <div className="flex-1">
-        <div style={{ fontFamily: 'Oswald, sans-serif', color: '#e0f0e8', fontSize: '0.85rem', letterSpacing: '0.03em' }}>{label}</div>
-        <div style={{ color: '#4a7d65', fontSize: '0.72rem', fontFamily: 'DM Mono, monospace' }}>{desc}</div>
+        <div style={{ fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", color: '#e0f0e8', fontSize: '0.85rem', letterSpacing: '0.03em' }}>{label}</div>
+        <div style={{ color: '#4a7d65', fontSize: '0.72rem', fontFamily: "'Twemoji Country Flags', 'DM Mono', monospace" }}>{desc}</div>
       </div>
     </div>
   );
@@ -63,7 +63,7 @@ function QuinielaRules({ config }: { config: AppConfig }) {
   return (
     <div className="grid gap-5">
       <Card icon={<Dice5 size={16} style={{ color: '#f5a623' }} />} title="¿QUÉ ES LA QUINIELA?">
-        <p style={{ color: '#c0d8cc', fontSize: '0.88rem', fontFamily: 'Nunito Sans', lineHeight: 1.6, marginBottom: '12px' }}>
+        <p style={{ color: '#c0d8cc', fontSize: '0.88rem', fontFamily: "'Twemoji Country Flags', 'Nunito Sans'", lineHeight: 1.6, marginBottom: '12px' }}>
           La Quiniela es la modalidad de azar de Pantera Mundialista: compras un boleto y se te asigna
           <strong style={{ color: '#d4f226' }}> una selección al azar</strong> del Mundial. Ganas según
           <strong> qué tan lejos llegue tu país</strong>. No hay que predecir nada: solo seguir a tu equipo.
@@ -78,12 +78,12 @@ function QuinielaRules({ config }: { config: AppConfig }) {
         <div className="flex flex-col">
           {ladder.map(tier => (
             <div key={tier.place} className="flex items-center gap-3 py-2.5" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-              <div className="w-16 text-center rounded-lg py-1 flex-shrink-0" style={{ background: tier.kind === 'cash' ? 'rgba(245,166,35,0.12)' : 'rgba(212,242,38,0.08)', fontFamily: 'Oswald, sans-serif', color: tier.kind === 'cash' ? '#f5a623' : '#d4f226', fontWeight: 700, fontSize: '0.9rem' }}>
+              <div className="w-16 text-center rounded-lg py-1 flex-shrink-0" style={{ background: tier.kind === 'cash' ? 'rgba(245,166,35,0.12)' : 'rgba(212,242,38,0.08)', fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", color: tier.kind === 'cash' ? '#f5a623' : '#d4f226', fontWeight: 700, fontSize: '0.9rem' }}>
                 {tier.place}
               </div>
               <div className="flex-1 flex items-center gap-2">
                 {tier.kind === 'cash' ? <Trophy size={13} style={{ color: '#f5a623' }} /> : <Coffee size={13} style={{ color: '#d4f226' }} />}
-                <span style={{ fontFamily: 'Oswald, sans-serif', color: '#e0f0e8', fontSize: '0.85rem' }}>{tier.label}</span>
+                <span style={{ fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", color: '#e0f0e8', fontSize: '0.85rem' }}>{tier.label}</span>
               </div>
               <span style={{ color: tier.kind === 'cash' ? '#f5a623' : '#d4f226', fontFamily: tier.kind === 'cash' ? 'Oswald, sans-serif' : 'DM Mono', fontSize: tier.kind === 'cash' ? '0.92rem' : '0.72rem', fontWeight: tier.kind === 'cash' ? 700 : 400 }}>
                 {tier.kind === 'cash' ? money(tier.amount, config.currency) : `vale ${money(tier.amount, config.currency)} Nessu · ×${tier.seats}`}
@@ -111,11 +111,11 @@ function QuinielaRules({ config }: { config: AppConfig }) {
           ].map(item => (
             <div key={item.step} className="flex items-start gap-3">
               <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5" style={{ background: 'rgba(212,242,38,0.15)', border: '1px solid rgba(212,242,38,0.2)' }}>
-                <span style={{ fontFamily: 'Oswald, sans-serif', color: '#d4f226', fontSize: '0.8rem', fontWeight: 700 }}>{item.step}</span>
+                <span style={{ fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", color: '#d4f226', fontSize: '0.8rem', fontWeight: 700 }}>{item.step}</span>
               </div>
               <div>
-                <div style={{ fontFamily: 'Oswald, sans-serif', color: '#e0f0e8', fontSize: '0.85rem', letterSpacing: '0.03em' }}>{item.title}</div>
-                <div style={{ color: '#7eb89a', fontSize: '0.78rem', fontFamily: 'Nunito Sans', marginTop: '2px' }}>{item.desc}</div>
+                <div style={{ fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", color: '#e0f0e8', fontSize: '0.85rem', letterSpacing: '0.03em' }}>{item.title}</div>
+                <div style={{ color: '#7eb89a', fontSize: '0.78rem', fontFamily: "'Twemoji Country Flags', 'Nunito Sans'", marginTop: '2px' }}>{item.desc}</div>
               </div>
             </div>
           ))}
@@ -131,8 +131,8 @@ function QuinielaRules({ config }: { config: AppConfig }) {
           { q: '¿Cómo veo cómo va mi premio?', a: 'En la página de la Quiniela ves tu país, qué tan lejos va y la sección "Cómo va el premio" que se actualiza con los resultados.' },
         ].map((faq, i, arr) => (
           <div key={i} className="py-3" style={{ borderBottom: i < arr.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none' }}>
-            <div style={{ fontFamily: 'Oswald, sans-serif', color: '#d4f226', fontSize: '0.85rem', letterSpacing: '0.03em', marginBottom: '4px' }}>{faq.q}</div>
-            <div style={{ color: '#9cc4b2', fontSize: '0.82rem', fontFamily: 'Nunito Sans', lineHeight: 1.5 }}>{faq.a}</div>
+            <div style={{ fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", color: '#d4f226', fontSize: '0.85rem', letterSpacing: '0.03em', marginBottom: '4px' }}>{faq.q}</div>
+            <div style={{ color: '#9cc4b2', fontSize: '0.82rem', fontFamily: "'Twemoji Country Flags', 'Nunito Sans'", lineHeight: 1.5 }}>{faq.a}</div>
           </div>
         ))}
       </Card>
@@ -153,7 +153,7 @@ export function ExplanationsPage({ config }: { config: AppConfig }) {
             <HelpCircle size={28} style={{ color: '#062b1a' }} />
           </div>
           <div>
-            <h1 style={{ fontFamily: 'Oswald, sans-serif', color: '#f5a623', fontSize: '1.8rem', fontWeight: 700, letterSpacing: '0.04em' }}>
+            <h1 style={{ fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", color: '#f5a623', fontSize: '1.8rem', fontWeight: 700, letterSpacing: '0.04em' }}>
               CÓMO FUNCIONA {mode === 'pantera' ? 'PRONOSTICA PANTERA' : 'LA QUINIELA'}
             </h1>
             <p style={{ color: '#7eb89a', fontSize: '0.85rem' }}>
@@ -174,7 +174,7 @@ export function ExplanationsPage({ config }: { config: AppConfig }) {
           <button key={key} onClick={() => setMode(key)}
             className="flex items-center gap-1.5 px-4 py-2 rounded-lg cursor-pointer transition-all"
             style={{
-              fontFamily: 'Oswald, sans-serif', fontSize: '0.82rem', letterSpacing: '0.04em',
+              fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", fontSize: '0.82rem', letterSpacing: '0.04em',
               background: mode === key ? '#f5a623' : '#0d5035',
               color: mode === key ? '#062b1a' : '#9cc4b2',
               border: '1px solid rgba(245,166,35,0.25)',
@@ -190,10 +190,10 @@ export function ExplanationsPage({ config }: { config: AppConfig }) {
       <div className="grid gap-5">
         {/* Qué es */}
         <Card icon={<Star size={16} style={{ color: '#f5a623' }} />} title="¿QUÉ ES PRONOSTICA PANTERA?">
-          <p style={{ color: '#c0d8cc', fontSize: '0.88rem', fontFamily: 'Nunito Sans, sans-serif', lineHeight: 1.6, marginBottom: '12px' }}>
+          <p style={{ color: '#c0d8cc', fontSize: '0.88rem', fontFamily: "'Twemoji Country Flags', 'Nunito Sans', sans-serif", lineHeight: 1.6, marginBottom: '12px' }}>
             Pronostica Pantera es una de las dos modalidades de Pantera Mundialista (Mundial FIFA 2026, Universidad Panamericana): un torneo de pronósticos deportivos donde cada participante predice los resultados. Ganas puntos cuando tus pronósticos coinciden con los resultados reales. La otra modalidad es la <strong>Quiniela</strong>, en la que te asignan una selección al azar.
           </p>
-          <p style={{ color: '#9cc4b2', fontSize: '0.84rem', fontFamily: 'Nunito Sans, sans-serif', lineHeight: 1.6, marginBottom: '12px' }}>
+          <p style={{ color: '#9cc4b2', fontSize: '0.84rem', fontFamily: "'Twemoji Country Flags', 'Nunito Sans', sans-serif", lineHeight: 1.6, marginBottom: '12px' }}>
             El Mundial 2026 son <strong>48 equipos en 12 grupos de 4</strong>: avanzan los 2 primeros de cada grupo más los 8 mejores terceros (32 en total) y de ahí es eliminación directa (<strong style={{ color: '#d4f226' }}>Dieciseisavos → Octavos → Cuartos → Semifinal → Final</strong>).
           </p>
           <BulletItem>Crea <strong>múltiples pronósticos</strong>{paymentConfigured ? ` (máx. ${config.maxPendingPerUser} con pago pendiente a la vez)` : ' (los que quieras)'}.</BulletItem>
@@ -215,11 +215,11 @@ export function ExplanationsPage({ config }: { config: AppConfig }) {
             ].map(item => (
               <div key={item.step} className="flex items-start gap-3">
                 <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5" style={{ background: 'rgba(212,242,38,0.15)', border: '1px solid rgba(212,242,38,0.2)' }}>
-                  <span style={{ fontFamily: 'Oswald, sans-serif', color: '#d4f226', fontSize: '0.8rem', fontWeight: 700 }}>{item.step}</span>
+                  <span style={{ fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", color: '#d4f226', fontSize: '0.8rem', fontWeight: 700 }}>{item.step}</span>
                 </div>
                 <div>
-                  <div style={{ fontFamily: 'Oswald, sans-serif', color: '#e0f0e8', fontSize: '0.85rem', letterSpacing: '0.03em' }}>{item.title}</div>
-                  <div style={{ color: '#7eb89a', fontSize: '0.78rem', fontFamily: 'Nunito Sans, sans-serif', marginTop: '2px' }}>{item.desc}</div>
+                  <div style={{ fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", color: '#e0f0e8', fontSize: '0.85rem', letterSpacing: '0.03em' }}>{item.title}</div>
+                  <div style={{ color: '#7eb89a', fontSize: '0.78rem', fontFamily: "'Twemoji Country Flags', 'Nunito Sans', sans-serif", marginTop: '2px' }}>{item.desc}</div>
                 </div>
               </div>
             ))}
@@ -228,7 +228,7 @@ export function ExplanationsPage({ config }: { config: AppConfig }) {
 
         {/* Sistema de puntos */}
         <Card icon={<Zap size={16} style={{ color: '#f5a623' }} />} title="SISTEMA DE PUNTOS">
-          <p style={{ color: '#7eb89a', fontSize: '0.8rem', fontFamily: 'Nunito Sans', marginBottom: '12px' }}>
+          <p style={{ color: '#7eb89a', fontSize: '0.8rem', fontFamily: "'Twemoji Country Flags', 'Nunito Sans'", marginBottom: '12px' }}>
             Los puntos se otorgan según el acierto de tu pronóstico y la dificultad de la ronda:
           </p>
           <PointRow label="Campeón del Mundo" pts={25} desc="si aciertas el campeón" />
@@ -240,7 +240,7 @@ export function ExplanationsPage({ config }: { config: AppConfig }) {
           <PointRow label="Ganador en Dieciséisavos (R32)" pts={3} desc="por equipo que avanza" />
           <PointRow label="Grupo — posición exacta" pts={2} desc="por cada 1°, 2° y 3° exacto" />
           <div className="mt-3 p-3 rounded-lg" style={{ background: 'rgba(245,166,35,0.07)', border: '1px solid rgba(245,166,35,0.12)' }}>
-            <span style={{ color: '#f5a623', fontSize: '0.78rem', fontFamily: 'Nunito Sans' }}>
+            <span style={{ color: '#f5a623', fontSize: '0.78rem', fontFamily: "'Twemoji Country Flags', 'Nunito Sans'" }}>
               En grupos cuenta la <strong>posición exacta</strong> (1°, 2° y 3°). En eliminatorias ganas los
               puntos por cada equipo que pusiste como ganador y que realmente avanzó en esa ronda. Tu puntaje
               se suma en vivo conforme se capturan los resultados oficiales.
@@ -250,7 +250,7 @@ export function ExplanationsPage({ config }: { config: AppConfig }) {
 
         {/* Cómo se determina el ganador */}
         <Card icon={<Award size={16} style={{ color: '#f5a623' }} />} title="CÓMO SE DETERMINA EL GANADOR">
-          <p style={{ color: '#c0d8cc', fontSize: '0.86rem', fontFamily: 'Nunito Sans', lineHeight: 1.6, marginBottom: '12px' }}>
+          <p style={{ color: '#c0d8cc', fontSize: '0.86rem', fontFamily: "'Twemoji Country Flags', 'Nunito Sans'", lineHeight: 1.6, marginBottom: '12px' }}>
             En Pronostica Pantera hay <strong style={{ color: '#d4f226' }}>un solo ganador</strong>. Se determina así, en orden:
           </p>
           <div className="flex flex-col gap-2.5">
@@ -260,17 +260,17 @@ export function ExplanationsPage({ config }: { config: AppConfig }) {
             ].map(s => (
               <div key={s.n} className="flex items-start gap-3">
                 <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5" style={{ background: 'rgba(245,166,35,0.15)', border: '1px solid rgba(245,166,35,0.25)' }}>
-                  <span style={{ fontFamily: 'Oswald, sans-serif', color: '#f5a623', fontSize: '0.8rem', fontWeight: 700 }}>{s.n}</span>
+                  <span style={{ fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", color: '#f5a623', fontSize: '0.8rem', fontWeight: 700 }}>{s.n}</span>
                 </div>
                 <div>
-                  <div style={{ fontFamily: 'Oswald, sans-serif', color: '#e0f0e8', fontSize: '0.85rem', letterSpacing: '0.03em' }}>{s.t}</div>
-                  <div style={{ color: '#7eb89a', fontSize: '0.78rem', fontFamily: 'Nunito Sans', marginTop: '2px' }}>{s.d}</div>
+                  <div style={{ fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", color: '#e0f0e8', fontSize: '0.85rem', letterSpacing: '0.03em' }}>{s.t}</div>
+                  <div style={{ color: '#7eb89a', fontSize: '0.78rem', fontFamily: "'Twemoji Country Flags', 'Nunito Sans'", marginTop: '2px' }}>{s.d}</div>
                 </div>
               </div>
             ))}
           </div>
           <div className="mt-3 p-3 rounded-lg" style={{ background: 'rgba(212,242,38,0.06)', border: '1px solid rgba(212,242,38,0.15)' }}>
-            <span style={{ color: '#d4f226', fontSize: '0.78rem', fontFamily: 'Nunito Sans' }}>
+            <span style={{ color: '#d4f226', fontSize: '0.78rem', fontFamily: "'Twemoji Country Flags', 'Nunito Sans'" }}>
               Como el desempate usa la fecha exacta de registro (única para cada pronóstico),
               <strong> siempre queda un único ganador</strong>, nunca un empate. Esto aplica igual a cada variante
               (Principal, Liga R32 y Liga R16): cada una tiene su propio ganador y su propio bote.
@@ -280,7 +280,7 @@ export function ExplanationsPage({ config }: { config: AppConfig }) {
 
         {/* Premios */}
         <Card icon={<Trophy size={16} style={{ color: '#f5a623' }} />} title="PREMIOS · EL GANADOR SE LLEVA EL BOTE">
-          <p style={{ color: '#c0d8cc', fontSize: '0.88rem', fontFamily: 'Nunito Sans', lineHeight: 1.6, marginBottom: '14px' }}>
+          <p style={{ color: '#c0d8cc', fontSize: '0.88rem', fontFamily: "'Twemoji Country Flags', 'Nunito Sans'", lineHeight: 1.6, marginBottom: '14px' }}>
             Pronostica Pantera es <strong style={{ color: '#d4f226' }}>"el ganador se lleva todo"</strong>: el único ganador de cada
             variante se queda con el bote de esa variante. El <strong>bote</strong> es la suma de todos los boletos pagados
             (boletos pagados × cuota). Publicamos como premio el <strong style={{ color: '#d4f226' }}>{Math.round(config.payoutPercent * 100)}%</strong> de
@@ -293,9 +293,9 @@ export function ExplanationsPage({ config }: { config: AppConfig }) {
               { key: 'r16', label: 'Liga R16', desc: 'Liga aparte de Octavos.', color: '#9cc4b2' },
             ].map(v => (
               <div key={v.key} className="rounded-xl p-4 text-center" style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid ${v.color}20` }}>
-                <div style={{ fontFamily: 'Oswald, sans-serif', color: v.color, fontSize: '1rem', letterSpacing: '0.05em' }}>{v.label}</div>
-                <div style={{ color: '#7eb89a', fontSize: '0.74rem', fontFamily: 'Nunito Sans', marginTop: '4px', minHeight: '32px' }}>{v.desc}</div>
-                <div className="mt-2 py-1.5 px-3 rounded-lg" style={{ background: `${v.color}12`, color: v.color, fontSize: '0.7rem', fontFamily: 'DM Mono' }}>
+                <div style={{ fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", color: v.color, fontSize: '1rem', letterSpacing: '0.05em' }}>{v.label}</div>
+                <div style={{ color: '#7eb89a', fontSize: '0.74rem', fontFamily: "'Twemoji Country Flags', 'Nunito Sans'", marginTop: '4px', minHeight: '32px' }}>{v.desc}</div>
+                <div className="mt-2 py-1.5 px-3 rounded-lg" style={{ background: `${v.color}12`, color: v.color, fontSize: '0.7rem', fontFamily: "'Twemoji Country Flags', 'DM Mono'" }}>
                   bote propio · 1 ganador
                 </div>
               </div>
@@ -303,7 +303,7 @@ export function ExplanationsPage({ config }: { config: AppConfig }) {
           </div>
           <div className="mt-4 p-3 rounded-lg flex items-start gap-2" style={{ background: 'rgba(245,166,35,0.07)', border: '1px solid rgba(245,166,35,0.15)' }}>
             <Star size={14} style={{ color: '#f5a623', marginTop: '2px', flexShrink: 0 }} />
-            <span style={{ color: '#f5a623', fontSize: '0.78rem', fontFamily: 'Nunito Sans' }}>
+            <span style={{ color: '#f5a623', fontSize: '0.78rem', fontFamily: "'Twemoji Country Flags', 'Nunito Sans'" }}>
               No hay 2° ni 3° lugar: el premio completo es para <strong>un solo ganador</strong> por variante. El bote
               crece conforme se confirman los pagos y lo puedes seguir <strong>en vivo desde el inicio</strong>.
             </span>
@@ -321,10 +321,10 @@ export function ExplanationsPage({ config }: { config: AppConfig }) {
             { q: '¿Cómo confirmo mi pago?', a: 'Al guardar un pronóstico, usa el botón "Confirmar transferencia" para enviar tu comprobante en el formulario. El organizador marca tu pago como confirmado.' },
           ].map((faq, i, arr) => (
             <div key={i} className="py-3" style={{ borderBottom: i < arr.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none' }}>
-              <div style={{ fontFamily: 'Oswald, sans-serif', color: '#d4f226', fontSize: '0.85rem', letterSpacing: '0.03em', marginBottom: '4px' }}>
+              <div style={{ fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", color: '#d4f226', fontSize: '0.85rem', letterSpacing: '0.03em', marginBottom: '4px' }}>
                 {faq.q}
               </div>
-              <div style={{ color: '#9cc4b2', fontSize: '0.82rem', fontFamily: 'Nunito Sans, sans-serif', lineHeight: 1.5 }}>
+              <div style={{ color: '#9cc4b2', fontSize: '0.82rem', fontFamily: "'Twemoji Country Flags', 'Nunito Sans', sans-serif", lineHeight: 1.5 }}>
                 {faq.a}
               </div>
             </div>
@@ -340,7 +340,7 @@ export function ExplanationsPage({ config }: { config: AppConfig }) {
           <Trophy size={14} style={{ color: '#f5a623', opacity: 0.5 }} />
           <div className="flex-1 h-px" style={{ background: 'rgba(245,166,35,0.15)' }} />
         </div>
-        <p style={{ color: '#3a6b55', fontSize: '0.72rem', fontFamily: 'DM Mono' }}>
+        <p style={{ color: '#3a6b55', fontSize: '0.72rem', fontFamily: "'Twemoji Country Flags', 'DM Mono'" }}>
           PANTERA MUNDIALISTA · UNIVERSIDAD PANAMERICANA · MUNDIAL 2026 · ESTADOS UNIDOS · CANADÁ · MÉXICO
         </p>
       </div>

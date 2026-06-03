@@ -1,1 +1,16 @@
 @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Nunito+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+
+/* Windows browsers have no flag-emoji glyphs, so country flags degrade to
+   two-letter codes. This self-hosted "Twemoji Country Flags" font (woff2 in
+   /public/fonts) contains ONLY flag glyphs — the unicode-range limits it to
+   regional-indicator pairs + the subdivision tag sequences (Scotland/England/
+   Wales), so every other character falls through to the normal font. Declared
+   here unconditionally (not via JS feature-detection) so the browser always
+   requests it. body/headings list this family first — see theme.css. */
+@font-face {
+  font-family: 'Twemoji Country Flags';
+  unicode-range: U+1F1E6-1F1FF, U+1F3F4, U+E0062-E0063, U+E0065, U+E0067,
+    U+E006C, U+E006E, U+E0073-E0074, U+E0077, U+E007F;
+  src: url('/fonts/TwemojiCountryFlags.woff2') format('woff2');
+  font-display: swap;
+}

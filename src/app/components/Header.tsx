@@ -37,8 +37,8 @@ export function Header({ currentPage, onNavigate, userName, isAdmin, showRifa, o
             <Trophy size={16} style={{ color: '#062b1a' }} />
           </div>
           <div className="leading-none">
-            <div style={{ fontFamily: 'Oswald, sans-serif', color: '#f5a623', fontSize: '14px', fontWeight: 700, letterSpacing: '0.05em' }}>PANTERA MUNDIALISTA</div>
-            <div style={{ fontFamily: 'Oswald, sans-serif', color: '#7eb89a', fontSize: '10px', letterSpacing: '0.1em' }}>MUNDIAL 2026</div>
+            <div style={{ fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", color: '#f5a623', fontSize: '14px', fontWeight: 700, letterSpacing: '0.05em' }}>PANTERA MUNDIALISTA</div>
+            <div style={{ fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", color: '#7eb89a', fontSize: '10px', letterSpacing: '0.1em' }}>MUNDIAL 2026</div>
           </div>
         </button>
 
@@ -49,7 +49,7 @@ export function Header({ currentPage, onNavigate, userName, isAdmin, showRifa, o
               onClick={() => onNavigate(item.page)}
               className="px-3 py-1.5 rounded transition-all duration-150 flex items-center gap-1"
               style={{
-                fontFamily: 'Oswald, sans-serif', fontSize: '13px', letterSpacing: '0.06em',
+                fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", fontSize: '13px', letterSpacing: '0.06em',
                 color: currentPage === item.page ? '#f5a623' : '#b8d4c4',
                 background: currentPage === item.page ? 'rgba(245,166,35,0.12)' : 'transparent',
                 borderBottom: currentPage === item.page ? '2px solid #f5a623' : '2px solid transparent',
@@ -65,7 +65,7 @@ export function Header({ currentPage, onNavigate, userName, isAdmin, showRifa, o
             <button
               onClick={() => onNavigate('my-predictions')}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs cursor-pointer transition-all"
-              style={{ background: '#f5a623', color: '#062b1a', fontFamily: 'Oswald, sans-serif', letterSpacing: '0.05em', fontWeight: 700, maxWidth: '160px' }}>
+              style={{ background: '#f5a623', color: '#062b1a', fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", letterSpacing: '0.05em', fontWeight: 700, maxWidth: '160px' }}>
               <User size={12} />
               <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{userName}</span>
             </button>
@@ -88,7 +88,7 @@ export function Header({ currentPage, onNavigate, userName, isAdmin, showRifa, o
               onClick={() => { onNavigate(item.page); setMenuOpen(false); }}
               className="text-left px-3 py-2 rounded flex items-center gap-2"
               style={{
-                fontFamily: 'Oswald, sans-serif', fontSize: '15px',
+                fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", fontSize: '15px',
                 color: currentPage === item.page ? '#f5a623' : '#b8d4c4',
                 background: currentPage === item.page ? 'rgba(245,166,35,0.1)' : 'transparent',
               }}>
@@ -96,7 +96,7 @@ export function Header({ currentPage, onNavigate, userName, isAdmin, showRifa, o
               {item.label}
             </button>
           ))}
-          <button onClick={() => { onLogout(); setMenuOpen(false); }} className="text-left px-3 py-2 rounded flex items-center gap-2" style={{ color: '#7eb89a', fontFamily: 'Oswald, sans-serif', fontSize: '14px' }}>
+          <button onClick={() => { onLogout(); setMenuOpen(false); }} className="text-left px-3 py-2 rounded flex items-center gap-2" style={{ color: '#7eb89a', fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", fontSize: '14px' }}>
             <LogOut size={14} /> Cerrar sesión
           </button>
         </div>
