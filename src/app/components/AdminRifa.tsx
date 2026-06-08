@@ -6,6 +6,7 @@ import {
 } from '../data/worldcup';
 import { fetchAllTickets, fetchPools, setTicketPayment, rifaPlaces, rifaCashTotal } from '../../lib/rifa';
 import { fetchAllUsers, type UserDoc } from '../../lib/predictions';
+import { ProofViewer } from './ProofViewer';
 
 function money(n: number, currency: string) {
   return `${n.toLocaleString('es-MX')} ${currency}`;
@@ -220,7 +221,7 @@ export function AdminRifa({ config, results }: { config: AppConfig; results: Res
                     <td className="px-3 py-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', color: '#9cc4b2', fontSize: '0.74rem', fontFamily: "'Twemoji Country Flags', 'DM Mono'" }}>{money(config.rifaFee, config.currency)}</td>
                     <td className="px-3 py-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
                       {t.proofUrl
-                        ? <a href={t.proofUrl} target="_blank" rel="noopener noreferrer" style={{ color: '#60a5fa', fontFamily: "'Twemoji Country Flags', 'DM Mono'", fontSize: '0.72rem', textDecoration: 'underline' }}>ver</a>
+                        ? <ProofViewer url={t.proofUrl} note={t.paymentNote} />
                         : <span style={{ color: '#4a7d65', fontSize: '0.72rem' }}>—</span>}
                     </td>
                     <td className="px-3 py-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
