@@ -40,3 +40,16 @@ jobs:
           GMAIL_FROM_NAME: ${{ secrets.GMAIL_FROM_NAME }}
           APP_URL: ${{ secrets.APP_URL }}
         run: node scripts/managePools.mjs --write
+
+      # Sends payment reminders ONLY when the admin queued a mailJob in the app
+      # (otherwise it's a cheap no-op). Runs after pool management so a pool draw
+      # isn't blocked if SMTP is down. See scripts/sendReminders.mjs.
+      - name: Send payment reminders
+        if: always()
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          GMAIL_FROM_NAME: ${{ secrets.GMAIL_FROM_NAME }}
+          APP_URL: ${{ secrets.APP_URL }}
+        run: node scripts/sendReminders.mjs --write

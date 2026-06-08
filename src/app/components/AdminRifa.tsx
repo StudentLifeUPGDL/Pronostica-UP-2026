@@ -1,11 +1,16 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Dice5, RefreshCw, Download, AlertCircle, Trophy, Coffee } from 'lucide-react';
+import { Dice5, RefreshCw, Download, AlertCircle, Trophy, Coffee, UserPlus, Mail } from 'lucide-react';
 import {
   getTeam, POOL_CAPACITY,
   type AppConfig, type Results, type Ticket, type Pool, type PaymentStatus,
 } from '../data/worldcup';
-import { fetchAllTickets, fetchPools, setTicketPayment, rifaPlaces, rifaCashTotal } from '../../lib/rifa';
+import {
+  fetchAllTickets, fetchPools, setTicketPayment, adminAddTicket,
+  requestRifaReminders, fetchLatestReminderJob, rifaPlaces, rifaCashTotal, type MailJob,
+} from '../../lib/rifa';
 import { fetchAllUsers, type UserDoc } from '../../lib/predictions';
+import { useAuth } from '../../lib/auth';
+import { ProofViewer } from './ProofViewer';
 
 function money(n: number, currency: string) {
   return `${n.toLocaleString('es-MX')} ${currency}`;
@@ -13,21 +18,34 @@ function money(n: number, currency: string) {
 function teamFlag(id: string) {
   return id ? `${getTeam(id).flag} ${getTeam(id).shortName}` : '—';
 }
+function fmtDate(iso?: string) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return isNaN(d.getTime()) ? '' : d.toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' });
+}
 
 export function AdminRifa({ config, results }: { config: AppConfig; results: Results }) {
+  const { user } = useAuth();
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [pools, setPools] = useState<Pool[]>([]);
   const [users, setUsers] = useState<Record<string, UserDoc>>({});
+  const [reminderJob, setReminderJob] = useState<MailJob | null>(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [note, setNote] = useState('');
+  const [addUid, setAddUid] = useState('');
+  const [addNote, setAddNote] = useState('Boleto extra registrado por admin');
 
   async function load() {
     setError(''); setBusy(true);
     try {
-      const [allTickets, allPools, allUsers] = await Promise.all([fetchAllTickets(), fetchPools(), fetchAllUsers()]);
+      const [allTickets, allPools, allUsers, lastJob] = await Promise.all([
+        fetchAllTickets(), fetchPools(), fetchAllUsers(), fetchLatestReminderJob(),
+      ]);
       setTickets(allTickets);
       setPools(allPools);
       setUsers(Object.fromEntries(allUsers.map(u => [u.uid, u])));
+      setReminderJob(lastJob);
     } catch {
       setError('No se pudieron cargar los boletos. Necesitas el permiso de administrador (scripts/setAdmin.mjs) y volver a iniciar sesión.');
     } finally {
@@ -50,6 +68,28 @@ export function AdminRifa({ config, results }: { config: AppConfig; results: Res
     try { await setTicketPayment(id, status); await load(); }
     catch { setError('No se pudo actualizar el estado de pago.'); }
     finally { setBusy(false); }
+  }
+
+  const userList = useMemo(
+    () => Object.values(users).sort((a, b) => (a.displayName || '').localeCompare(b.displayName || '')),
+    [users],
+  );
+
+  async function addTicket() {
+    const u = users[addUid];
+    if (!u) { setError('Selecciona un participante para registrarle el boleto.'); return; }
+    setBusy(true); setNote(''); setError('');
+    try {
+      const t = await adminAddTicket({
+        uid: u.uid, email: u.email, displayName: u.displayName,
+        note: addNote.trim() || undefined,
+      });
+      setNote(`Boleto ${t.id} agregado y marcado como pagado para ${u.displayName}. El cron lo asignará a un pool en su próxima corrida.`);
+      setAddUid('');
+      await load();
+    } catch {
+      setError('No se pudo agregar el boleto. Necesitas permiso de administrador.');
+    } finally { setBusy(false); }
   }
 
   // Owner of the ticket holding a given team. The Rifa is a single 48-team raffle,
@@ -80,6 +120,26 @@ export function AdminRifa({ config, results }: { config: AppConfig; results: Res
   }
 
   const paidWaiting = tickets.filter(t => t.paymentStatus === 'paid' && !t.teamId).length;
+  const unpaidCount = tickets.filter(t => t.paymentStatus === 'pending').length;
+  const reminderQueued = reminderJob?.status === 'pending';
+
+  async function sendReminders() {
+    if (!unpaidCount) return;
+    const when = fmtDate(config.paymentDeadline);
+    if (!window.confirm(
+      `Se enviará un correo recordando el pago a los dueños de los ${unpaidCount} boleto(s) sin pagar` +
+      `${when ? `, con fecha límite ${when}` : ''}.\n\n` +
+      'El correo lo envía el cron (GitHub Actions) en su próxima corrida (unos minutos). ¿Continuar?',
+    )) return;
+    setBusy(true); setNote(''); setError('');
+    try {
+      await requestRifaReminders(user?.email ?? undefined);
+      setNote('Recordatorio en cola. El cron enviará los correos en su próxima corrida (unos minutos).');
+      await load();
+    } catch {
+      setError('No se pudo encolar el recordatorio. Necesitas permiso de administrador.');
+    } finally { setBusy(false); }
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -109,6 +169,33 @@ export function AdminRifa({ config, results }: { config: AppConfig; results: Res
         La asignación de equipos y los correos los hace el cron automático (GitHub Actions · <code style={{ color: '#d4f226' }}>manage-pools.yml</code>) cuando un pool junta {POOL_CAPACITY} boletos pagados.
         Aquí solo confirmas pagos. Boletos pagados esperando asignación: <strong style={{ color: '#f5a623' }}>{paidWaiting}</strong>.
       </div>
+
+      {/* ── Payment reminder ── */}
+      <section className="rounded-xl overflow-hidden" style={{ background: '#0d5035', border: '1px solid rgba(96,165,250,0.25)' }}>
+        <div className="px-5 py-3 flex items-center gap-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+          <Mail size={15} style={{ color: '#60a5fa' }} />
+          <span style={{ fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", color: '#60a5fa', fontSize: '0.95rem', letterSpacing: '0.05em' }}>RECORDATORIO DE PAGO</span>
+        </div>
+        <div className="px-5 py-4 flex flex-wrap items-center justify-between gap-3">
+          <div style={{ color: '#9cc4b2', fontSize: '0.8rem', maxWidth: '420px' }}>
+            Envía un correo a los dueños de <strong style={{ color: '#f5a623' }}>{unpaidCount}</strong> boleto(s) sin pagar para que completen el pago
+            {config.paymentDeadline ? <> antes del <strong style={{ color: '#e0f0e8' }}>{fmtDate(config.paymentDeadline)}</strong></> : null}.
+            {' '}Los manda el cron en su próxima corrida (unos minutos).
+            {reminderJob && (
+              <div style={{ marginTop: '8px', fontSize: '0.74rem', fontFamily: "'Twemoji Country Flags', 'DM Mono'" }}>
+                {reminderJob.status === 'pending' && <span style={{ color: '#f5a623' }}>● En cola — pendiente de envío por el cron.</span>}
+                {reminderJob.status === 'sent' && <span style={{ color: '#4ade80' }}>● Último envío: {reminderJob.sentCount ?? 0} correo(s){reminderJob.finishedAt ? ` · ${fmtDate(reminderJob.finishedAt)}` : ''}.</span>}
+                {reminderJob.status === 'error' && <span style={{ color: '#e63946' }}>● Falló el último envío: {reminderJob.error ?? 'error desconocido'}.</span>}
+              </div>
+            )}
+          </div>
+          <button onClick={sendReminders} disabled={busy || unpaidCount === 0 || reminderQueued}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-lg cursor-pointer disabled:opacity-50"
+            style={{ background: 'rgba(96,165,250,0.12)', color: '#60a5fa', border: '1px solid rgba(96,165,250,0.35)', fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", fontSize: '0.78rem', whiteSpace: 'nowrap' }}>
+            <Mail size={14} /> {reminderQueued ? 'EN COLA…' : 'ENVIAR RECORDATORIO'}
+          </button>
+        </div>
+      </section>
 
       {/* ── Pools overview ── */}
       <section className="rounded-xl overflow-hidden" style={{ background: '#0d5035', border: '1px solid rgba(255,255,255,0.07)' }}>
@@ -191,6 +278,46 @@ export function AdminRifa({ config, results }: { config: AppConfig; results: Res
         </div>
       </section>
 
+      {note && (
+        <div className="px-4 py-3 rounded-xl" style={{ background: 'rgba(74,222,128,0.1)', border: '1px solid rgba(74,222,128,0.25)', color: '#9be7b4', fontSize: '0.82rem' }}>
+          {note}
+        </div>
+      )}
+
+      {/* ── Register an extra ticket on behalf of a participant ── */}
+      <section className="rounded-xl overflow-hidden" style={{ background: '#0d5035', border: '1px solid rgba(212,242,38,0.2)' }}>
+        <div className="px-5 py-3 flex items-center gap-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+          <UserPlus size={15} style={{ color: '#d4f226' }} />
+          <span style={{ fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", color: '#d4f226', fontSize: '0.95rem', letterSpacing: '0.05em' }}>AGREGAR BOLETO MANUAL</span>
+        </div>
+        <div className="px-5 py-4 flex flex-col gap-3">
+          <p style={{ color: '#9cc4b2', fontSize: '0.8rem' }}>
+            Registra un boleto que un participante ya pagó pero no quedó capturado en la app. Se crea ya <strong style={{ color: '#4ade80' }}>pagado</strong> y el cron lo asignará a un pool en su próxima corrida.
+          </p>
+          <div className="flex flex-wrap items-end gap-3">
+            <label className="flex flex-col gap-1" style={{ minWidth: '260px', flex: '1 1 260px' }}>
+              <span style={{ color: '#7eb89a', fontSize: '0.7rem', fontFamily: "'Twemoji Country Flags', 'DM Mono'", letterSpacing: '0.04em' }}>PARTICIPANTE</span>
+              <select value={addUid} disabled={busy} onChange={e => setAddUid(e.target.value)}
+                style={{ background: '#0b4730', color: '#e0f0e8', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', padding: '7px 8px', fontFamily: "'Twemoji Country Flags', 'Nunito Sans'", fontSize: '0.82rem' }}>
+                <option value="">— Selecciona un participante —</option>
+                {userList.map(u => (
+                  <option key={u.uid} value={u.uid}>{u.displayName} · {u.email}</option>
+                ))}
+              </select>
+            </label>
+            <label className="flex flex-col gap-1" style={{ minWidth: '220px', flex: '1 1 220px' }}>
+              <span style={{ color: '#7eb89a', fontSize: '0.7rem', fontFamily: "'Twemoji Country Flags', 'DM Mono'", letterSpacing: '0.04em' }}>NOTA (OPCIONAL)</span>
+              <input value={addNote} disabled={busy} onChange={e => setAddNote(e.target.value)}
+                style={{ background: '#0b4730', color: '#e0f0e8', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', padding: '7px 8px', fontFamily: "'Twemoji Country Flags', 'Nunito Sans'", fontSize: '0.82rem' }} />
+            </label>
+            <button onClick={addTicket} disabled={busy || !addUid} className="flex items-center gap-1.5 px-4 py-2 rounded-lg cursor-pointer disabled:opacity-50"
+              style={{ background: 'rgba(212,242,38,0.12)', color: '#d4f226', border: '1px solid rgba(212,242,38,0.3)', fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", fontSize: '0.78rem' }}>
+              <UserPlus size={14} /> AGREGAR BOLETO PAGADO
+            </button>
+          </div>
+        </div>
+      </section>
+
       {/* ── Ticket payment management ── */}
       <section className="rounded-xl overflow-hidden" style={{ background: '#0d5035', border: '1px solid rgba(255,255,255,0.07)' }}>
         <div className="px-5 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
@@ -220,7 +347,7 @@ export function AdminRifa({ config, results }: { config: AppConfig; results: Res
                     <td className="px-3 py-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', color: '#9cc4b2', fontSize: '0.74rem', fontFamily: "'Twemoji Country Flags', 'DM Mono'" }}>{money(config.rifaFee, config.currency)}</td>
                     <td className="px-3 py-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
                       {t.proofUrl
-                        ? <a href={t.proofUrl} target="_blank" rel="noopener noreferrer" style={{ color: '#60a5fa', fontFamily: "'Twemoji Country Flags', 'DM Mono'", fontSize: '0.72rem', textDecoration: 'underline' }}>ver</a>
+                        ? <ProofViewer url={t.proofUrl} note={t.paymentNote} />
                         : <span style={{ color: '#4a7d65', fontSize: '0.72rem' }}>—</span>}
                     </td>
                     <td className="px-3 py-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>

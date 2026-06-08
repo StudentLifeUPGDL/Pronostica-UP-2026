@@ -9,6 +9,7 @@ import {
   fetchAllPredictions, fetchAllUsers, setPaymentStatus, applyVoids, type UserDoc,
 } from '../../lib/predictions';
 import { recomputePublicStats } from '../../lib/stats';
+import { ProofViewer } from './ProofViewer';
 
 const LEAGUES: { key: League; label: string }[] = [
   { key: 'main', label: 'Liga Principal' },
@@ -228,7 +229,7 @@ export function AdminReport({ config, results }: { config: AppConfig; results: R
                     <td className="px-3 py-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', color: '#9cc4b2', fontSize: '0.74rem', fontFamily: "'Twemoji Country Flags', 'DM Mono'" }}>{money(feeFor(p.league), config.currency)}</td>
                     <td className="px-3 py-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
                       {p.proofUrl
-                        ? <a href={p.proofUrl} target="_blank" rel="noopener noreferrer" style={{ color: '#60a5fa', fontFamily: "'Twemoji Country Flags', 'DM Mono'", fontSize: '0.72rem', textDecoration: 'underline' }}>ver</a>
+                        ? <ProofViewer url={p.proofUrl} note={p.paymentNote} />
                         : <span style={{ color: '#4a7d65', fontSize: '0.72rem' }}>—</span>}
                     </td>
                     <td className="px-3 py-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>

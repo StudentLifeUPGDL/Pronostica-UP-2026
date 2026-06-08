@@ -114,11 +114,15 @@ service cloud.firestore {
     match /tickets/{ticketId} {
       allow read: if isAdmin() || (isSignedIn() && resource.data.uid == request.auth.uid);
 
-      allow create: if isSignedIn()
-                    && request.resource.data.uid == request.auth.uid
-                    && request.resource.data.paymentStatus == 'pending'
-                    && request.resource.data.poolId == ''
-                    && request.resource.data.teamId == '';
+      // Admin may register a ticket on behalf of any participant (e.g. an extra
+      // ticket paid outside the app); a user may only create their own PENDING
+      // ticket with no pool/team.
+      allow create: if isAdmin()
+                    || (isSignedIn()
+                        && request.resource.data.uid == request.auth.uid
+                        && request.resource.data.paymentStatus == 'pending'
+                        && request.resource.data.poolId == ''
+                        && request.resource.data.teamId == '');
 
       allow update: if isAdmin()
                     // Owner submits a payment proof: pending → review, attaching ONLY
@@ -135,6 +139,13 @@ service cloud.firestore {
                         && resource.data.uid == request.auth.uid
                         && resource.data.paymentStatus == 'pending'
                         && resource.data.poolId == '');
+    }
+
+    // Mail jobs: the admin queues a request (e.g. "send payment reminders") from the
+    // app; the cron (admin SDK, bypasses rules) picks up 'pending' jobs, sends the
+    // emails and marks them done. Admin-only — never exposed to participants.
+    match /mailJobs/{jobId} {
+      allow read, write: if isAdmin();
     }
   }
 }
