@@ -47,6 +47,37 @@ export async function buyTicket(input: BuyTicketInput): Promise<Ticket> {
   return ticket;
 }
 
+export interface AdminAddTicketInput {
+  uid: string;
+  email?: string;
+  displayName?: string;
+  note?: string;
+}
+
+// Admin-only: register a ticket on behalf of a participant who paid for an extra
+// ticket outside the app (e.g. a transfer the app never captured). Creates it
+// already PAID with no pool/team, so the cron bins it like any other paid ticket
+// on its next run. Firestore rules let admins create tickets for any uid.
+export async function adminAddTicket(input: AdminAddTicketInput): Promise<Ticket> {
+  const now = new Date().toISOString();
+  const ticket: Ticket = {
+    id: makeTicketFolio(),
+    uid: input.uid,
+    userEmail: input.email,
+    userDisplayName: input.displayName,
+    paymentStatus: 'paid',
+    paidAt: now,
+    paymentNote: input.note,
+    poolId: '',
+    teamId: '',
+    notified: false,
+    createdAt: now,
+  };
+  await setDoc(doc(db, 'tickets', ticket.id), stripUndefined(ticket as unknown as Record<string, unknown>));
+  await recomputePublicStats().catch(() => {});
+  return ticket;
+}
+
 export async function fetchMyTickets(uid: string): Promise<Ticket[]> {
   if (!firebaseConfigured) return [];
   const q = query(collection(db, 'tickets'), where('uid', '==', uid));
@@ -74,6 +105,50 @@ export async function setTicketPayment(
 // Owner may delete only an unpaid ticket not yet in a pool; admin may delete any.
 export async function deleteTicket(id: string): Promise<void> {
   await deleteDoc(doc(db, 'tickets', id));
+}
+
+// ─── mail jobs (admin → cron relay) ───────────────────────────────────────────
+
+// A request the admin queues from the app for the cron to act on. There is no web
+// backend, so the browser can't send mail directly: the admin writes a 'pending'
+// job here and the GitHub Actions cron (scripts/sendReminders.mjs) sends the emails
+// on its next run and marks the job 'sent'.
+export interface MailJob {
+  id: string;
+  type: 'rifa-reminder';
+  status: 'pending' | 'sent' | 'error';
+  requestedAt: string;          // ISO
+  requestedBy?: string;         // admin email (audit only)
+  recipientCount?: number;      // filled by the cron
+  sentCount?: number;           // filled by the cron
+  finishedAt?: string;          // ISO — when the cron finished
+  error?: string;               // set by the cron on failure
+}
+
+// Queue a payment-reminder send for every owner of an unpaid (pending) ticket. The
+// cron reads config.paymentDeadline and the live ticket list when it runs.
+export async function requestRifaReminders(requestedBy?: string): Promise<MailJob> {
+  const job: MailJob = {
+    id: `rmd-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`,
+    type: 'rifa-reminder',
+    status: 'pending',
+    requestedAt: new Date().toISOString(),
+    requestedBy,
+  };
+  await setDoc(doc(db, 'mailJobs', job.id), stripUndefined(job as unknown as Record<string, unknown>));
+  return job;
+}
+
+// Most recent reminder job, for showing its status in the admin UI. The collection
+// is tiny, so we read it all and sort client-side (no composite index needed).
+export async function fetchLatestReminderJob(): Promise<MailJob | null> {
+  if (!firebaseConfigured) return null;
+  const snap = await getDocs(collection(db, 'mailJobs'));
+  const jobs = snap.docs
+    .map(d => d.data() as MailJob)
+    .filter(j => j.type === 'rifa-reminder')
+    .sort((a, b) => (b.requestedAt ?? '').localeCompare(a.requestedAt ?? ''));
+  return jobs[0] ?? null;
 }
 
 // ─── pools ──────────────────────────────────────────────────────────────────
