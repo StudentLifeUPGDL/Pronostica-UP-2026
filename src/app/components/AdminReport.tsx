@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Trophy, Download, RefreshCw, AlertCircle, Crown } from 'lucide-react';
+import { Trophy, Download, RefreshCw, AlertCircle, Crown, Mail } from 'lucide-react';
 import {
   getTeam, type AppConfig, type Results, type Prediction, type League, type PaymentStatus,
 } from '../data/worldcup';
@@ -8,6 +8,8 @@ import { leagueLabel } from '../../lib/payment';
 import {
   fetchAllPredictions, fetchAllUsers, setPaymentStatus, applyVoids, type UserDoc,
 } from '../../lib/predictions';
+import { requestReminderJob, fetchLatestReminderJob, type MailJob } from '../../lib/mailJobs';
+import { useAuth } from '../../lib/auth';
 import { recomputePublicStats } from '../../lib/stats';
 import { ProofViewer } from './ProofViewer';
 
@@ -24,10 +26,17 @@ function money(n: number, currency: string) {
 function teamFlag(id: string) {
   return id ? `${getTeam(id).flag} ${getTeam(id).shortName}` : '—';
 }
+function fmtDate(iso?: string) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return isNaN(d.getTime()) ? '' : d.toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' });
+}
 
 export function AdminReport({ config, results }: { config: AppConfig; results: Results }) {
+  const { user } = useAuth();
   const [preds, setPreds] = useState<Prediction[]>([]);
   const [users, setUsers] = useState<Record<string, UserDoc>>({});
+  const [reminderJob, setReminderJob] = useState<MailJob | null>(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState('');
@@ -35,9 +44,12 @@ export function AdminReport({ config, results }: { config: AppConfig; results: R
   async function load() {
     setError(''); setBusy(true);
     try {
-      const [allPreds, allUsers] = await Promise.all([fetchAllPredictions(), fetchAllUsers()]);
+      const [allPreds, allUsers, lastJob] = await Promise.all([
+        fetchAllPredictions(), fetchAllUsers(), fetchLatestReminderJob('pronostica-reminder'),
+      ]);
       setPreds(allPreds);
       setUsers(Object.fromEntries(allUsers.map(u => [u.uid, u])));
+      setReminderJob(lastJob);
     } catch {
       setError('No se pudieron cargar los datos. Necesitas el permiso de administrador: ejecuta scripts/setAdmin.mjs con tu correo y vuelve a iniciar sesión.');
     } finally {
@@ -72,6 +84,27 @@ export function AdminReport({ config, results }: { config: AppConfig; results: R
       await load();
     } catch {
       setError('No se pudieron aplicar las anulaciones.');
+    } finally { setBusy(false); }
+  }
+
+  const unpaidCount = preds.filter(p => p.paymentStatus === 'pending').length;
+  const reminderQueued = reminderJob?.status === 'pending';
+
+  async function sendReminders() {
+    if (!unpaidCount) return;
+    const when = fmtDate(config.paymentDeadline);
+    if (!window.confirm(
+      `Se enviará un correo recordando el pago a los dueños de los ${unpaidCount} pronóstico(s) sin pagar` +
+      `${when ? `, con fecha límite ${when}` : ''}.\n\n` +
+      'El correo lo envía el cron (GitHub Actions) en su próxima corrida (unos minutos). ¿Continuar?',
+    )) return;
+    setBusy(true); setNote(''); setError('');
+    try {
+      await requestReminderJob('pronostica-reminder', user?.email ?? undefined);
+      setNote('Recordatorio en cola. El cron enviará los correos en su próxima corrida (unos minutos).');
+      await load();
+    } catch {
+      setError('No se pudo encolar el recordatorio. Necesitas permiso de administrador.');
     } finally { setBusy(false); }
   }
 
@@ -195,6 +228,33 @@ export function AdminReport({ config, results }: { config: AppConfig; results: R
           )}
         </section>
       ))}
+
+      {/* ── Payment reminder ── */}
+      <section className="rounded-xl overflow-hidden" style={{ background: '#0d5035', border: '1px solid rgba(96,165,250,0.25)' }}>
+        <div className="px-5 py-3 flex items-center gap-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+          <Mail size={15} style={{ color: '#60a5fa' }} />
+          <span style={{ fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", color: '#60a5fa', fontSize: '0.95rem', letterSpacing: '0.05em' }}>RECORDATORIO DE PAGO</span>
+        </div>
+        <div className="px-5 py-4 flex flex-wrap items-center justify-between gap-3">
+          <div style={{ color: '#9cc4b2', fontSize: '0.8rem', maxWidth: '420px' }}>
+            Envía un correo a los dueños de <strong style={{ color: '#f5a623' }}>{unpaidCount}</strong> pronóstico(s) sin pagar para que completen el pago
+            {config.paymentDeadline ? <> antes del <strong style={{ color: '#e0f0e8' }}>{fmtDate(config.paymentDeadline)}</strong></> : null}.
+            {' '}Los manda el cron en su próxima corrida (unos minutos).
+            {reminderJob && (
+              <div style={{ marginTop: '8px', fontSize: '0.74rem', fontFamily: "'Twemoji Country Flags', 'DM Mono'" }}>
+                {reminderJob.status === 'pending' && <span style={{ color: '#f5a623' }}>● En cola — pendiente de envío por el cron.</span>}
+                {reminderJob.status === 'sent' && <span style={{ color: '#4ade80' }}>● Último envío: {reminderJob.sentCount ?? 0} correo(s){reminderJob.finishedAt ? ` · ${fmtDate(reminderJob.finishedAt)}` : ''}.</span>}
+                {reminderJob.status === 'error' && <span style={{ color: '#e63946' }}>● Falló el último envío: {reminderJob.error ?? 'error desconocido'}.</span>}
+              </div>
+            )}
+          </div>
+          <button onClick={sendReminders} disabled={busy || unpaidCount === 0 || reminderQueued}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-lg cursor-pointer disabled:opacity-50"
+            style={{ background: 'rgba(96,165,250,0.12)', color: '#60a5fa', border: '1px solid rgba(96,165,250,0.35)', fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", fontSize: '0.78rem', whiteSpace: 'nowrap' }}>
+            <Mail size={14} /> {reminderQueued ? 'EN COLA…' : 'ENVIAR RECORDATORIO'}
+          </button>
+        </div>
+      </section>
 
       {/* ── Payment management ── */}
       <section className="rounded-xl overflow-hidden" style={{ background: '#0d5035', border: '1px solid rgba(255,255,255,0.07)' }}>
