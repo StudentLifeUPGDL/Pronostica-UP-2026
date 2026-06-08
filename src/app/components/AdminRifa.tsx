@@ -5,9 +5,9 @@ import {
   type AppConfig, type Results, type Ticket, type Pool, type PaymentStatus,
 } from '../data/worldcup';
 import {
-  fetchAllTickets, fetchPools, setTicketPayment, adminAddTicket,
-  requestRifaReminders, fetchLatestReminderJob, rifaPlaces, rifaCashTotal, type MailJob,
+  fetchAllTickets, fetchPools, setTicketPayment, adminAddTicket, rifaPlaces, rifaCashTotal,
 } from '../../lib/rifa';
+import { requestReminderJob, fetchLatestReminderJob, type MailJob } from '../../lib/mailJobs';
 import { fetchAllUsers, type UserDoc } from '../../lib/predictions';
 import { useAuth } from '../../lib/auth';
 import { ProofViewer } from './ProofViewer';
@@ -40,7 +40,7 @@ export function AdminRifa({ config, results }: { config: AppConfig; results: Res
     setError(''); setBusy(true);
     try {
       const [allTickets, allPools, allUsers, lastJob] = await Promise.all([
-        fetchAllTickets(), fetchPools(), fetchAllUsers(), fetchLatestReminderJob(),
+        fetchAllTickets(), fetchPools(), fetchAllUsers(), fetchLatestReminderJob('rifa-reminder'),
       ]);
       setTickets(allTickets);
       setPools(allPools);
@@ -133,7 +133,7 @@ export function AdminRifa({ config, results }: { config: AppConfig; results: Res
     )) return;
     setBusy(true); setNote(''); setError('');
     try {
-      await requestRifaReminders(user?.email ?? undefined);
+      await requestReminderJob('rifa-reminder', user?.email ?? undefined);
       setNote('Recordatorio en cola. El cron enviará los correos en su próxima corrida (unos minutos).');
       await load();
     } catch {
