@@ -57,7 +57,18 @@ async function getTransporter() {
   const pass = (process.env.GMAIL_APP_PASSWORD || '').replace(/\s+/g, '');
   if (!user || !pass) throw new Error('Missing GMAIL_USER or GMAIL_APP_PASSWORD.');
   const { default: nodemailer } = await import('nodemailer');
-  _transporter = nodemailer.createTransport({ service: 'gmail', auth: { user, pass } });
+  // Reminders send to the whole list at once (dozens–hundreds of mails). Without
+  // pooling, nodemailer opens a fresh SMTP connection (a new LOGIN) per message and
+  // Gmail rejects the burst with "454-4.7.0 Too many login attempts". A single
+  // pooled, rate-limited connection reuses one login and stays under Gmail's caps.
+  _transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: { user, pass },
+    pool: true,
+    maxConnections: 1,
+    rateLimit: 5,      // ≤ 5 messages…
+    rateDelta: 1000,   // …per second
+  });
   return _transporter;
 }
 
@@ -267,6 +278,9 @@ async function main() {
   }
 
   if (!write) console.log('\n(dry run — nada enviado. Usa --write para enviar.)');
+
+  // Close the pooled SMTP connection so the process can exit promptly.
+  if (_transporter) _transporter.close();
 }
 
 main().catch((e) => { console.error('\n❌', e.message ?? e); process.exit(1); });
