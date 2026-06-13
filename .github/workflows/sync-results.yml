@@ -21,6 +21,11 @@ jobs:
   sync:
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    # The football-data.org / Firebase secrets live in the Production environment
+    # (not repo-level), so the job must declare it to read them — otherwise secrets.*
+    # resolve to empty and the script exits with "Missing FOOTBALL_DATA_API_KEY".
+    # Same fix already applied to manage-pools.yml.
+    environment: Production
     steps:
       - uses: actions/checkout@v4
 
