@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Users, Trophy, Calendar, Flame, Dice5 } from 'lucide-react';
 import {
-  buildSchedule, GROUPS, getTeam, matchOutcome, BIG_PRIZE_THRESHOLD,
+  buildSchedule, GROUPS, getTeam, matchOutcome, matchDateTime, matchKickoffIso, BIG_PRIZE_THRESHOLD,
   type Prediction, type Results, type AppConfig, type PublicStats,
 } from '../data/worldcup';
 import { computeScore, prizePool } from '../../lib/scoring';
@@ -179,15 +179,26 @@ export function HomePage({ userName, onNavigate, predictions, results, config, s
           <div>
             {/* Next 8 fixtures that haven't been played yet — a match drops off this
                 list once we have its result (finished or live). Matches that occurred
-                but whose result we couldn't sync stay here (no outcome → still upcoming). */}
-            {buildSchedule(results).filter(m => !matchOutcome(m, results)).slice(0, 8).map(match => {
+                but whose result we couldn't sync stay here (no outcome → still upcoming).
+                Ordered by real kickoff (fixtures with a known time come first). */}
+            {buildSchedule(results)
+              .filter(m => !matchOutcome(m, results))
+              .sort((a, b) => {
+                const ka = matchKickoffIso(a, results), kb = matchKickoffIso(b, results);
+                if (ka && kb) return ka < kb ? -1 : ka > kb ? 1 : 0;
+                if (ka) return -1;
+                if (kb) return 1;
+                return (a.matchNum ?? 0) - (b.matchNum ?? 0);
+              })
+              .slice(0, 8).map(match => {
               const home = match.homeTeamId ? getTeam(match.homeTeamId) : null;
               const away = match.awayTeamId ? getTeam(match.awayTeamId) : null;
+              const dt = matchDateTime(match, results);
               return (
                 <div key={match.id} className="px-5 py-3 flex items-center gap-3 hover:bg-white/5 transition-colors" style={{ borderTop: '1px solid rgba(255,255,255,0.04)' }}>
                   <div className="text-center flex-shrink-0" style={{ minWidth: '56px' }}>
-                    <div style={{ fontFamily: "'Twemoji Country Flags', 'DM Mono', monospace", color: '#7eb89a', fontSize: '0.7rem' }}>{match.date}</div>
-                    <div style={{ fontFamily: "'Twemoji Country Flags', 'DM Mono', monospace", color: '#f5a623', fontSize: '0.75rem', fontWeight: 500 }}>{match.time}</div>
+                    <div style={{ fontFamily: "'Twemoji Country Flags', 'DM Mono', monospace", color: '#7eb89a', fontSize: '0.7rem' }}>{dt.date}</div>
+                    <div style={{ fontFamily: "'Twemoji Country Flags', 'DM Mono', monospace", color: '#f5a623', fontSize: '0.75rem', fontWeight: 500 }}>{dt.time}</div>
                   </div>
                   <div className="flex-1 flex items-center justify-between gap-2">
                     <div className="flex items-center gap-1.5 min-w-0">
