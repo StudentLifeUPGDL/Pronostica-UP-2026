@@ -159,6 +159,7 @@ export interface Results {
   groups: Record<string, GroupResult>; // exact placements per group A–L (scored — written only once the group has played all its matches)
   groupTables?: Record<string, GroupStandingRow[]>; // live standings rows per group, in position order (display only, updates each match)
   matchResults?: Record<string, MatchScore>; // per-match scorelines (finished + live), keyed by teamPairKey — display only, for the Partidos calendar
+  kickoffs?: Record<string, string>;    // real kickoff (ISO UTC) per match, keyed by teamPairKey — overrides the generated placeholder date/time when present
   bestThirds?: string[];                // the (up to) 8 third-placed team IDs that advanced to R32; lets the bracket render the real "winner vs best 3rd" matchups
   r32Winners: string[];                 // 16 teams that won R32 (advanced to R16)
   r16Winners: string[];                 // 8 teams advancing to QF
@@ -171,7 +172,7 @@ export interface Results {
 }
 
 export const EMPTY_RESULTS: Results = {
-  groups: {}, groupTables: {}, matchResults: {}, bestThirds: [], r32Winners: [], r16Winners: [], qfWinners: [], sfWinners: [],
+  groups: {}, groupTables: {}, matchResults: {}, kickoffs: {}, bestThirds: [], r32Winners: [], r16Winners: [], qfWinners: [], sfWinners: [],
   champion: '', runnerUp: '', thirdPlace: '',
 };
 
@@ -692,6 +693,42 @@ export function matchOutcome(
     awayScore: flip ? r.homeScore : r.awayScore,
     status: r.status,
   };
+}
+
+// ─── Kickoff date/time (real schedule, shown in Ciudad de México time) ──────────
+
+// All displayed times are Ciudad de México (UTC-6, no DST). The sync stores each
+// match's real kickoff as ISO UTC under results.kickoffs (keyed by team pair); we
+// format it here. Generated placeholder dates/times are only a fallback.
+const CDMX_TZ = 'America/Mexico_City';
+const cdmxDateFmt = new Intl.DateTimeFormat('es-MX', { day: 'numeric', month: 'short', timeZone: CDMX_TZ });
+const cdmxTimeFmt = new Intl.DateTimeFormat('es-MX', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: CDMX_TZ });
+
+// "11 jun" — strip es-MX's trailing "." on the abbreviated month to match our style.
+function formatCdmxDate(iso: string): string {
+  return cdmxDateFmt.format(new Date(iso)).replace('.', '').toLowerCase();
+}
+function formatCdmxTime(iso: string): string {
+  return cdmxTimeFmt.format(new Date(iso));
+}
+
+// The real kickoff ISO for a fixture, or null when we don't have one (e.g. a
+// knockout slot whose teams aren't decided yet — it keeps its placeholder date).
+export function matchKickoffIso(match: Match, results?: Results): string | null {
+  if (!results?.kickoffs || !match.homeTeamId || !match.awayTeamId) return null;
+  return results.kickoffs[teamPairKey(match.homeTeamId, match.awayTeamId)] ?? null;
+}
+
+// Date + time to display for a fixture: the real synced kickoff (in CDMX time) when
+// available, otherwise the generated placeholder carried on the match. `synced` says
+// which one it is, so callers can flag still-tentative knockout dates if they want.
+export function matchDateTime(
+  match: Match,
+  results?: Results,
+): { date: string; time: string; synced: boolean } {
+  const iso = matchKickoffIso(match, results);
+  if (iso) return { date: formatCdmxDate(iso), time: formatCdmxTime(iso), synced: true };
+  return { date: match.date, time: match.time, synced: false };
 }
 
 // ─── Mock data ────────────────────────────────────────────────────────────────

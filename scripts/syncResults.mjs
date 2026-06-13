@@ -301,6 +301,21 @@ function buildResults(standings, matches) {
   }
   if (Object.keys(matchResults).length) out.matchResults = matchResults;
 
+  // Real kickoff (UTC) for every match whose teams we can place on our calendar,
+  // keyed by the unordered app-team pair. The frontend converts these to Ciudad de
+  // México time and shows them instead of the generated placeholder date/time, so
+  // the calendar reflects the official schedule. Group-stage teams are always known;
+  // knockout fixtures fill in as the bracket resolves.
+  const kickoffs = {};
+  for (const m of matches.matches ?? []) {
+    if (!m.utcDate) continue;
+    const homeId = resolveTeam(m.homeTeam);
+    const awayId = resolveTeam(m.awayTeam);
+    if (!homeId || !awayId) continue;
+    kickoffs[[homeId, awayId].sort().join('__')] = m.utcDate;
+  }
+  if (Object.keys(kickoffs).length) out.kickoffs = kickoffs;
+
   return out;
 }
 
@@ -333,6 +348,7 @@ function summarize(r) {
   const mr = Object.values(r.matchResults ?? {});
   const liveCount = mr.filter((m) => m.status === 'live').length;
   lines.push(`  Match scorelines: ${mr.length} (${liveCount} live, ${mr.length - liveCount} final)`);
+  lines.push(`  Real kickoffs synced: ${Object.keys(r.kickoffs ?? {}).length}`);
   lines.push('─────────────────────────────────────────────────');
   return lines.join('\n');
 }

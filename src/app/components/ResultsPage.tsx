@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { CheckCircle2, Clock, Trophy } from 'lucide-react';
-import { GROUPS, buildSchedule, getTeam, matchOutcome, PHASE_ORDER, type Match, type Results, EMPTY_RESULTS } from '../data/worldcup';
+import { GROUPS, buildSchedule, getTeam, matchOutcome, matchDateTime, PHASE_ORDER, type Match, type Results, EMPTY_RESULTS } from '../data/worldcup';
 
 type Tab = 'grupos' | 'partidos' | 'clasificados';
 
@@ -62,10 +62,10 @@ export function ResultsPage({ results = EMPTY_RESULTS }: { results?: Results }) 
         <Clock size={18} style={{ color: '#d4f226' }} />
         <div>
           <span style={{ fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", color: '#d4f226', fontSize: '0.9rem', letterSpacing: '0.05em' }}>
-            FASE PREVIA AL TORNEO
+            CALENDARIO DEL TORNEO
           </span>
           <p style={{ color: '#7eb89a', fontSize: '0.78rem', marginTop: '2px' }}>
-            El torneo inicia el jueves 11 de junio de 2026. Los partidos mostrados son próximos encuentros.
+            Copa del Mundo 2026 · 11 jun – 19 jul. Todos los horarios en hora del centro de México (CDMX).
           </p>
         </div>
       </div>
@@ -105,6 +105,7 @@ export function ResultsPage({ results = EMPTY_RESULTS }: { results?: Results }) 
               <div>
                 {matches.map((match: Match, i: number) => {
                   const out = matchOutcome(match, results);
+                  const dt = matchDateTime(match, results);
                   const homeWon = out ? out.homeScore > out.awayScore : false;
                   const awayWon = out ? out.awayScore > out.homeScore : false;
                   return (
@@ -115,8 +116,8 @@ export function ResultsPage({ results = EMPTY_RESULTS }: { results?: Results }) 
                   >
                     {/* Date/time/match number */}
                     <div className="flex-shrink-0 text-center" style={{ minWidth: '70px' }}>
-                      <div style={{ fontFamily: "'Twemoji Country Flags', 'DM Mono', monospace", color: '#7eb89a', fontSize: '0.68rem' }}>{match.date}</div>
-                      <div style={{ fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", color: '#f5a623', fontSize: '0.9rem', fontWeight: 600 }}>{match.time}</div>
+                      <div style={{ fontFamily: "'Twemoji Country Flags', 'DM Mono', monospace", color: '#7eb89a', fontSize: '0.68rem' }}>{dt.date}</div>
+                      <div style={{ fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", color: '#f5a623', fontSize: '0.9rem', fontWeight: 600 }}>{dt.time}</div>
                       <div style={{ color: '#4a7d65', fontSize: '0.62rem', fontFamily: "'Twemoji Country Flags', 'DM Mono'" }}>
                         {match.group ? `Gr. ${match.group}` : `P${match.matchNum}`}
                       </div>
