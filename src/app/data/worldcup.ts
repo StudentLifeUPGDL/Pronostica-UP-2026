@@ -142,9 +142,23 @@ export interface GroupStandingRow {
   points: number;
 }
 
+// One played (or in-progress) match's scoreline, as synced from the data feed.
+// Keyed in `Results.matchResults` by the unordered app-team pair (see teamPairKey),
+// so the calendar can attach a score to its own fixture regardless of home/away order.
+// `homeId`/`awayId` record the feed's orientation so the score can be re-oriented.
+export interface MatchScore {
+  homeId: string;
+  awayId: string;
+  homeScore: number;
+  awayScore: number;
+  status: 'finished' | 'live';
+  utcDate?: string | null;
+}
+
 export interface Results {
   groups: Record<string, GroupResult>; // exact placements per group A–L (scored — written only once the group has played all its matches)
   groupTables?: Record<string, GroupStandingRow[]>; // live standings rows per group, in position order (display only, updates each match)
+  matchResults?: Record<string, MatchScore>; // per-match scorelines (finished + live), keyed by teamPairKey — display only, for the Partidos calendar
   bestThirds?: string[];                // the (up to) 8 third-placed team IDs that advanced to R32; lets the bracket render the real "winner vs best 3rd" matchups
   r32Winners: string[];                 // 16 teams that won R32 (advanced to R16)
   r16Winners: string[];                 // 8 teams advancing to QF
@@ -157,7 +171,7 @@ export interface Results {
 }
 
 export const EMPTY_RESULTS: Results = {
-  groups: {}, groupTables: {}, bestThirds: [], r32Winners: [], r16Winners: [], qfWinners: [], sfWinners: [],
+  groups: {}, groupTables: {}, matchResults: {}, bestThirds: [], r32Winners: [], r16Winners: [], qfWinners: [], sfWinners: [],
   champion: '', runnerUp: '', thirdPlace: '',
 };
 
@@ -652,6 +666,33 @@ export function buildSchedule(results?: Results): Match[] {
 // Static, results-agnostic snapshots for convenience.
 export const GROUP_STAGE_MATCHES: Match[] = buildGroupStageMatches();
 export const FULL_SCHEDULE: Match[] = buildSchedule();
+
+// ─── Per-match scorelines (Partidos calendar) ───────────────────────────────────
+
+// Stable key for the unordered pair of teams in a fixture. The sync writes results
+// under this key, and a calendar match looks its score up the same way — so order
+// (home/away) doesn't have to match between the feed and our schedule.
+export function teamPairKey(a: string, b: string): string {
+  return [a, b].sort().join('__');
+}
+
+// The played/in-progress scoreline for a calendar match, oriented to *this* match's
+// home/away sides — or null if we have no result for it yet (so it stays "upcoming").
+// Returns null for fixtures whose teams aren't resolved (knockout placeholders).
+export function matchOutcome(
+  match: Match,
+  results?: Results,
+): { homeScore: number; awayScore: number; status: 'finished' | 'live' } | null {
+  if (!results?.matchResults || !match.homeTeamId || !match.awayTeamId) return null;
+  const r = results.matchResults[teamPairKey(match.homeTeamId, match.awayTeamId)];
+  if (!r) return null;
+  const flip = r.homeId !== match.homeTeamId; // feed listed the sides the other way round
+  return {
+    homeScore: flip ? r.awayScore : r.homeScore,
+    awayScore: flip ? r.homeScore : r.awayScore,
+    status: r.status,
+  };
+}
 
 // ─── Mock data ────────────────────────────────────────────────────────────────
 

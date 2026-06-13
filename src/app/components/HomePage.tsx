@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Users, Trophy, Calendar, Flame, Dice5 } from 'lucide-react';
 import {
-  FULL_SCHEDULE, GROUPS, getTeam, BIG_PRIZE_THRESHOLD,
+  buildSchedule, GROUPS, getTeam, matchOutcome, BIG_PRIZE_THRESHOLD,
   type Prediction, type Results, type AppConfig, type PublicStats,
 } from '../data/worldcup';
 import { computeScore, prizePool } from '../../lib/scoring';
@@ -177,7 +177,10 @@ export function HomePage({ userName, onNavigate, predictions, results, config, s
             <button onClick={() => onNavigate('results')} style={{ color: '#7eb89a', fontSize: '0.72rem', fontFamily: "'Twemoji Country Flags', 'DM Mono', monospace" }}>ver todos →</button>
           </div>
           <div>
-            {FULL_SCHEDULE.slice(0, 8).map(match => {
+            {/* Next 8 fixtures that haven't been played yet — a match drops off this
+                list once we have its result (finished or live). Matches that occurred
+                but whose result we couldn't sync stay here (no outcome → still upcoming). */}
+            {buildSchedule(results).filter(m => !matchOutcome(m, results)).slice(0, 8).map(match => {
               const home = match.homeTeamId ? getTeam(match.homeTeamId) : null;
               const away = match.awayTeamId ? getTeam(match.awayTeamId) : null;
               return (

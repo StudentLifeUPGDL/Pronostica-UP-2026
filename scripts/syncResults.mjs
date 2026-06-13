@@ -279,6 +279,28 @@ function buildResults(standings, matches) {
     if (third) out.thirdPlace = third;
   }
 
+  // Per-match scorelines for the Partidos calendar (display only — scoring never
+  // reads these). Keyed by the unordered app-team pair so the frontend attaches a
+  // score to its own fixture regardless of home/away order. Includes in-progress
+  // matches so scores show live; a fixture with no entry stays "upcoming".
+  const matchResults = {};
+  for (const m of matches.matches ?? []) {
+    const live = m.status === 'IN_PLAY' || m.status === 'PAUSED';
+    if (m.status !== 'FINISHED' && !live) continue;
+    const homeId = resolveTeam(m.homeTeam);
+    const awayId = resolveTeam(m.awayTeam);
+    if (!homeId || !awayId) continue; // can't place an unresolved team on our calendar
+    const hs = m.score?.fullTime?.home;
+    const as = m.score?.fullTime?.away;
+    if (hs == null || as == null) continue;
+    matchResults[[homeId, awayId].sort().join('__')] = {
+      homeId, awayId, homeScore: hs, awayScore: as,
+      status: m.status === 'FINISHED' ? 'finished' : 'live',
+      utcDate: m.utcDate ?? null,
+    };
+  }
+  if (Object.keys(matchResults).length) out.matchResults = matchResults;
+
   return out;
 }
 
@@ -308,6 +330,9 @@ function summarize(r) {
   lines.push(`  QF  advanced (${r.qfWinners?.length ?? 0}/4):  ${names(r.qfWinners)}`);
   lines.push(`  SF  advanced (${r.sfWinners?.length ?? 0}/2):  ${names(r.sfWinners)}`);
   lines.push(`  🏆 ${DISPLAY[r.champion] ?? r.champion ?? '—'}   🥈 ${DISPLAY[r.runnerUp] ?? r.runnerUp ?? '—'}   🥉 ${DISPLAY[r.thirdPlace] ?? r.thirdPlace ?? '—'}`);
+  const mr = Object.values(r.matchResults ?? {});
+  const liveCount = mr.filter((m) => m.status === 'live').length;
+  lines.push(`  Match scorelines: ${mr.length} (${liveCount} live, ${mr.length - liveCount} final)`);
   lines.push('─────────────────────────────────────────────────');
   return lines.join('\n');
 }

@@ -1,16 +1,16 @@
 import { useState } from 'react';
 import { CheckCircle2, Clock, Trophy } from 'lucide-react';
-import { GROUPS, buildSchedule, getTeam, PHASE_ORDER, type Match, type Results, EMPTY_RESULTS } from '../data/worldcup';
+import { GROUPS, buildSchedule, getTeam, matchOutcome, PHASE_ORDER, type Match, type Results, EMPTY_RESULTS } from '../data/worldcup';
 
 type Tab = 'grupos' | 'partidos' | 'clasificados';
 
 // One side of a match row: a resolved team, or a placeholder label when unknown.
-function MatchSide({ teamId, label, align }: { teamId: string; label?: string; align: 'left' | 'right' }) {
+function MatchSide({ teamId, label, align, dim = false }: { teamId: string; label?: string; align: 'left' | 'right'; dim?: boolean }) {
   const team = teamId ? getTeam(teamId) : null;
   const rowClass = align === 'right' ? 'flex items-center gap-2 flex-1 justify-end' : 'flex items-center gap-2 flex-1';
-  const flag = <span className="text-xl">{team ? team.flag : '⏳'}</span>;
+  const flag = <span className="text-xl" style={{ opacity: dim ? 0.5 : 1 }}>{team ? team.flag : '⏳'}</span>;
   const name = team
-    ? <span style={{ color: '#e0f0e8', fontSize: '0.88rem', fontFamily: "'Twemoji Country Flags', 'Nunito Sans', sans-serif", fontWeight: 600 }}>{team.name}</span>
+    ? <span style={{ color: '#e0f0e8', fontSize: '0.88rem', fontFamily: "'Twemoji Country Flags', 'Nunito Sans', sans-serif", fontWeight: 600, opacity: dim ? 0.5 : 1 }}>{team.name}</span>
     : <span style={{ color: '#7eb89a', fontSize: '0.82rem', fontFamily: "'Twemoji Country Flags', 'DM Mono', monospace", fontStyle: 'italic' }}>{label}</span>;
   return <div className={rowClass}>{align === 'right' ? <>{name}{flag}</> : <>{flag}{name}</>}</div>;
 }
@@ -103,7 +103,11 @@ export function ResultsPage({ results = EMPTY_RESULTS }: { results?: Results }) 
                 <span style={{ color: '#4a7d65', fontSize: '0.66rem', fontFamily: "'Twemoji Country Flags', 'DM Mono'" }}>{matches.length} partidos</span>
               </div>
               <div>
-                {matches.map((match: Match, i: number) => (
+                {matches.map((match: Match, i: number) => {
+                  const out = matchOutcome(match, results);
+                  const homeWon = out ? out.homeScore > out.awayScore : false;
+                  const awayWon = out ? out.awayScore > out.homeScore : false;
+                  return (
                   <div
                     key={match.id}
                     className="px-5 py-4 flex items-center gap-4"
@@ -120,22 +124,41 @@ export function ResultsPage({ results = EMPTY_RESULTS }: { results?: Results }) 
 
                     {/* Match */}
                     <div className="flex-1 flex items-center gap-3">
-                      <MatchSide teamId={match.homeTeamId} label={match.homeLabel} align="right" />
-                      <div className="flex-shrink-0 px-3 py-1 rounded-lg" style={{ background: 'rgba(255,255,255,0.07)', minWidth: '64px', textAlign: 'center' }}>
-                        <span style={{ fontFamily: "'Twemoji Country Flags', 'DM Mono', monospace", color: '#9cc4b2', fontSize: '0.85rem' }}>VS</span>
-                      </div>
-                      <MatchSide teamId={match.awayTeamId} label={match.awayLabel} align="left" />
+                      <MatchSide teamId={match.homeTeamId} label={match.homeLabel} align="right" dim={out ? !homeWon : false} />
+                      {out ? (
+                        <div className="flex-shrink-0 px-3 py-1 rounded-lg" style={{ background: out.status === 'live' ? 'rgba(212,242,38,0.12)' : 'rgba(74,222,128,0.1)', minWidth: '64px', textAlign: 'center' }}>
+                          <span style={{ fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", color: '#e0f0e8', fontSize: '0.95rem', fontWeight: 700, letterSpacing: '0.02em' }}>
+                            {out.homeScore} <span style={{ color: '#4a7d65' }}>-</span> {out.awayScore}
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="flex-shrink-0 px-3 py-1 rounded-lg" style={{ background: 'rgba(255,255,255,0.07)', minWidth: '64px', textAlign: 'center' }}>
+                          <span style={{ fontFamily: "'Twemoji Country Flags', 'DM Mono', monospace", color: '#9cc4b2', fontSize: '0.85rem' }}>VS</span>
+                        </div>
+                      )}
+                      <MatchSide teamId={match.awayTeamId} label={match.awayLabel} align="left" dim={out ? !awayWon : false} />
                     </div>
 
-                    {/* City */}
+                    {/* City + status */}
                     <div className="hidden sm:block flex-shrink-0 text-right" style={{ minWidth: '100px' }}>
                       <div style={{ color: '#4a7d65', fontSize: '0.68rem', fontFamily: "'Twemoji Country Flags', 'DM Mono', monospace" }}>{match.city}</div>
-                      <div className="mt-1 px-2 py-0.5 rounded-full inline-block" style={{ background: 'rgba(212,242,38,0.08)', color: '#d4f226', fontSize: '0.6rem', fontFamily: "'Twemoji Country Flags', 'DM Mono'" }}>
-                        PRÓXIMO
-                      </div>
+                      {out?.status === 'live' ? (
+                        <div className="mt-1 px-2 py-0.5 rounded-full inline-block" style={{ background: 'rgba(212,242,38,0.12)', color: '#d4f226', fontSize: '0.6rem', fontFamily: "'Twemoji Country Flags', 'DM Mono'", letterSpacing: '0.06em' }}>
+                          EN VIVO
+                        </div>
+                      ) : out ? (
+                        <div className="mt-1 px-2 py-0.5 rounded-full inline-block" style={{ background: 'rgba(74,222,128,0.1)', color: '#4ade80', fontSize: '0.6rem', fontFamily: "'Twemoji Country Flags', 'DM Mono'", letterSpacing: '0.06em' }}>
+                          FINAL
+                        </div>
+                      ) : (
+                        <div className="mt-1 px-2 py-0.5 rounded-full inline-block" style={{ background: 'rgba(212,242,38,0.08)', color: '#d4f226', fontSize: '0.6rem', fontFamily: "'Twemoji Country Flags', 'DM Mono'" }}>
+                          PRÓXIMO
+                        </div>
+                      )}
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           ))}
