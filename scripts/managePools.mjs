@@ -181,8 +181,11 @@ async function main() {
   const { startIndex, chunks } = planAssignments(tickets, pools);
   const nowIso = new Date().toISOString();
 
-  const ticketUpdates = []; // { id, patch }
-  const poolUpsserts = [];  // { id, data }
+  // Full pools draw teams (each guarded by a re-verification transaction at write
+  // time); the trailing partial pool only records membership (no teams yet).
+  const teamDraws = [];   // { poolId, index, poolData, tickets: [{ id, teamId }] }
+  const openUpdates = []; // { id, patch }  — membership only, no team
+  const openPools = [];   // { id, data }
   let newlyAssigned = 0;
 
   chunks.forEach((chunk, j) => {
@@ -196,12 +199,11 @@ async function main() {
     if (full) {
       const seed = randomBytes(16).toString('hex');
       const shuffled = shuffleSeeded(TEAM_IDS, seed);
-      chunk.forEach((t, i) => {
-        ticketUpdates.push({ id: t.id, patch: { teamId: shuffled[i], poolId, poolIndex: index } });
-      });
-      poolUpsserts.push({
-        id: poolId,
-        data: {
+      teamDraws.push({
+        poolId,
+        index,
+        tickets: chunk.map((t, i) => ({ id: t.id, teamId: shuffled[i] })),
+        poolData: {
           id: poolId, index, status: 'assigned', capacity: POOL_CAPACITY, paidCount: POOL_CAPACITY,
           fee: rifaFee, payoutSplit: rifaPayoutSplit, assignedAt: nowIso, assignedSeed: seed,
           createdAt: existing?.createdAt ?? nowIso,
@@ -212,10 +214,10 @@ async function main() {
       // Current open pool — record membership + progress (no teams yet).
       chunk.forEach(t => {
         if (t.poolId !== poolId || t.poolIndex !== index) {
-          ticketUpdates.push({ id: t.id, patch: { poolId, poolIndex: index } });
+          openUpdates.push({ id: t.id, patch: { poolId, poolIndex: index } });
         }
       });
-      poolUpsserts.push({
+      openPools.push({
         id: poolId,
         data: {
           id: poolId, index, status: 'open', capacity: POOL_CAPACITY, paidCount: chunk.length,
@@ -226,11 +228,13 @@ async function main() {
   });
 
   // Report.
+  const plannedPools = [...teamDraws.map(a => a.poolData), ...openPools.map(p => p.data)];
+  const plannedTicketChanges = openUpdates.length + teamDraws.reduce((n, a) => n + a.tickets.length, 0);
   console.log(`\n── Rifa de Países ─────────────────────────────────`);
   console.log(`  Boletos: ${tickets.length}  ·  pagados sin equipo: ${tickets.filter(t => t.paymentStatus === 'paid' && !t.teamId).length}`);
   console.log(`  Pools existentes: ${pools.length} (asignados: ${pools.filter(p => p.status === 'assigned').length})`);
-  console.log(`  Cambios: ${ticketUpdates.length} boleto(s), ${poolUpsserts.length} pool(s), ${newlyAssigned} recién asignado(s)`);
-  for (const p of poolUpsserts) console.log(`    → ${p.id}: ${p.data.status} (${p.data.paidCount}/${POOL_CAPACITY})`);
+  console.log(`  Cambios: ${plannedTicketChanges} boleto(s), ${plannedPools.length} pool(s), ${newlyAssigned} recién asignado(s)`);
+  for (const p of plannedPools) console.log(`    → ${p.id}: ${p.status} (${p.paidCount}/${POOL_CAPACITY})`);
   console.log(`───────────────────────────────────────────────────`);
 
   if (!write) {
@@ -238,20 +242,57 @@ async function main() {
     return;
   }
 
-  // Write tickets + pools in a batch.
-  if (ticketUpdates.length || poolUpsserts.length) {
+  // Open-pool membership + open pools carry no team, so a plain batch is safe.
+  if (openUpdates.length || openPools.length) {
     const batch = db.batch();
-    for (const u of ticketUpdates) batch.update(db.collection('tickets').doc(u.id), u.patch);
-    for (const p of poolUpsserts) batch.set(db.collection('pools').doc(p.id), p.data, { merge: true });
+    for (const u of openUpdates) batch.update(db.collection('tickets').doc(u.id), u.patch);
+    for (const p of openPools) batch.set(db.collection('pools').doc(p.id), p.data, { merge: true });
     await batch.commit();
-    console.log('✅ Firestore actualizado.');
   }
 
-  // Email every assigned-but-not-notified ticket (covers retries from earlier runs).
+  // Team draws re-verify each ticket's status INSIDE a transaction: the snapshot
+  // above may be stale (an admin could have voided a payment, or a prior run
+  // already assigned a team). We only hand out teams if every ticket in the pool
+  // is still a paid, team-less ticket; otherwise we skip the whole pool and let
+  // the next run re-plan with fresh data. The transaction's re-read also aborts
+  // if any of these tickets is written concurrently, so no ticket is ever given a
+  // team while its status is changing.
+  const assignedPatch = new Map(); // ticketId → { teamId, poolId, poolIndex } (only committed ones)
+  for (const draw of teamDraws) {
+    try {
+      const ok = await db.runTransaction(async (tx) => {
+        const refs = draw.tickets.map(t => db.collection('tickets').doc(t.id));
+        const snaps = await Promise.all(refs.map(r => tx.get(r)));
+        for (const s of snaps) {
+          const d = s.exists ? s.data() : null;
+          if (!d || d.paymentStatus !== 'paid' || d.teamId) return false; // status changed → bail
+        }
+        draw.tickets.forEach((t, i) => {
+          tx.update(refs[i], { teamId: t.teamId, poolId: draw.poolId, poolIndex: draw.index });
+        });
+        tx.set(db.collection('pools').doc(draw.poolId), draw.poolData, { merge: true });
+        return true;
+      });
+      if (ok) {
+        for (const t of draw.tickets) {
+          assignedPatch.set(t.id, { teamId: t.teamId, poolId: draw.poolId, poolIndex: draw.index });
+        }
+        console.log(`✅ ${draw.poolId}: 48 equipos asignados.`);
+      } else {
+        console.warn(`  ⚠️  ${draw.poolId}: un boleto cambió de estado; sorteo pospuesto a la próxima corrida.`);
+      }
+    } catch (e) {
+      console.warn(`  ⚠️  ${draw.poolId}: la transacción falló, sin cambios: ${e.message ?? e}`);
+    }
+  }
+
+  // Email every assigned-but-not-notified ticket (covers retries from earlier runs
+  // plus the pools just drawn above). Only pools that actually committed appear in
+  // assignedPatch, so we never email a team we didn't assign.
   if (!noEmail) {
     const assignedTickets = tickets.map(t => {
-      const u = ticketUpdates.find(x => x.id === t.id);
-      return u ? { ...t, ...u.patch } : t;
+      const patch = assignedPatch.get(t.id);
+      return patch ? { ...t, ...patch } : t;
     }).filter(t => t.teamId && t.notified !== true && t.userEmail);
 
     let sent = 0;

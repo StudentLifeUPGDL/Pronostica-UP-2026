@@ -116,6 +116,34 @@ function CountdownTimer({ target }: { target: string }) {
 export function HomePage({ userName, onNavigate, predictions, results, config, stats }: HomePageProps) {
   const mains = predictions.filter(p => p.league === 'main');
 
+  // "Próximos partidos" card: recently played / live matches shown ON TOP (with their
+  // score), then the next upcoming fixtures below. A match has an outcome once we've
+  // synced its result, which is exactly what moves it from "upcoming" to "recent".
+  const schedule = buildSchedule(results);
+  const upcomingMatches = schedule
+    .filter(m => !matchOutcome(m, results))
+    .sort((a, b) => {
+      const ka = matchKickoffIso(a, results), kb = matchKickoffIso(b, results);
+      if (ka && kb) return ka < kb ? -1 : ka > kb ? 1 : 0;
+      if (ka) return -1;
+      if (kb) return 1;
+      return (a.matchNum ?? 0) - (b.matchNum ?? 0);
+    })
+    .slice(0, 6);
+  // Live first, then most-recent finished (by real kickoff, newest first).
+  const recentMatches = schedule
+    .filter(m => matchOutcome(m, results))
+    .sort((a, b) => {
+      const la = matchOutcome(a, results)?.status === 'live' ? 1 : 0;
+      const lb = matchOutcome(b, results)?.status === 'live' ? 1 : 0;
+      if (la !== lb) return lb - la;
+      const ka = matchKickoffIso(a, results) ?? '', kb = matchKickoffIso(b, results) ?? '';
+      if (ka && kb) return ka < kb ? 1 : ka > kb ? -1 : 0;
+      return (b.matchNum ?? 0) - (a.matchNum ?? 0);
+    })
+    .slice(0, 5);
+  const cardMatches = [...recentMatches, ...upcomingMatches];
+
   const qualifiedConfederations = [
     { name: 'UEFA', teams: 16, color: '#4a9eff' },
     { name: 'CONMEBOL', teams: 6, color: '#f5a623' },
@@ -177,23 +205,22 @@ export function HomePage({ userName, onNavigate, predictions, results, config, s
             <button onClick={() => onNavigate('results')} style={{ color: '#7eb89a', fontSize: '0.72rem', fontFamily: "'Twemoji Country Flags', 'DM Mono', monospace" }}>ver todos →</button>
           </div>
           <div>
-            {/* Next 8 fixtures that haven't been played yet — a match drops off this
-                list once we have its result (finished or live). Matches that occurred
-                but whose result we couldn't sync stay here (no outcome → still upcoming).
-                Ordered by real kickoff (fixtures with a known time come first). */}
-            {buildSchedule(results)
-              .filter(m => !matchOutcome(m, results))
-              .sort((a, b) => {
-                const ka = matchKickoffIso(a, results), kb = matchKickoffIso(b, results);
-                if (ka && kb) return ka < kb ? -1 : ka > kb ? 1 : 0;
-                if (ka) return -1;
-                if (kb) return 1;
-                return (a.matchNum ?? 0) - (b.matchNum ?? 0);
-              })
-              .slice(0, 8).map(match => {
+            {/* Recently played / live matches (with their score) shown on top, then the
+                next upcoming fixtures. A match moves from "upcoming" to "recent" as soon
+                as we sync its result; ordered so live + newest results sit at the very top
+                and the soonest upcoming fixtures follow. */}
+            {cardMatches.length === 0 && (
+              <div className="px-5 py-6 text-center" style={{ color: '#7eb89a', fontSize: '0.8rem' }}>
+                Aún no hay partidos programados.
+              </div>
+            )}
+            {cardMatches.map(match => {
               const home = match.homeTeamId ? getTeam(match.homeTeamId) : null;
               const away = match.awayTeamId ? getTeam(match.awayTeamId) : null;
               const dt = matchDateTime(match, results);
+              const out = matchOutcome(match, results);
+              const homeWon = out ? out.homeScore > out.awayScore : false;
+              const awayWon = out ? out.awayScore > out.homeScore : false;
               return (
                 <div key={match.id} className="px-5 py-3 flex items-center gap-3 hover:bg-white/5 transition-colors" style={{ borderTop: '1px solid rgba(255,255,255,0.04)' }}>
                   <div className="text-center flex-shrink-0" style={{ minWidth: '56px' }}>
@@ -202,16 +229,28 @@ export function HomePage({ userName, onNavigate, predictions, results, config, s
                   </div>
                   <div className="flex-1 flex items-center justify-between gap-2">
                     <div className="flex items-center gap-1.5 min-w-0">
-                      <span className="text-base">{home ? home.flag : '⏳'}</span>
-                      <span style={{ color: '#e0f0e8', fontSize: '0.82rem' }} className="truncate">{home ? home.shortName : match.homeLabel}</span>
+                      <span className="text-base" style={{ opacity: out && !homeWon ? 0.5 : 1 }}>{home ? home.flag : '⏳'}</span>
+                      <span style={{ color: '#e0f0e8', fontSize: '0.82rem', opacity: out && !homeWon ? 0.5 : 1 }} className="truncate">{home ? home.shortName : match.homeLabel}</span>
                     </div>
-                    <div className="flex-shrink-0 px-2 py-0.5 rounded" style={{ background: 'rgba(255,255,255,0.08)', fontFamily: "'Twemoji Country Flags', 'DM Mono', monospace", color: '#9cc4b2', fontSize: '0.72rem' }}>VS</div>
+                    {out ? (
+                      <div className="flex-shrink-0 px-2 py-0.5 rounded" style={{ background: out.status === 'live' ? 'rgba(212,242,38,0.14)' : 'rgba(74,222,128,0.12)', fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", color: '#e0f0e8', fontSize: '0.8rem', fontWeight: 700 }}>
+                        {out.homeScore} <span style={{ color: '#4a7d65' }}>-</span> {out.awayScore}
+                      </div>
+                    ) : (
+                      <div className="flex-shrink-0 px-2 py-0.5 rounded" style={{ background: 'rgba(255,255,255,0.08)', fontFamily: "'Twemoji Country Flags', 'DM Mono', monospace", color: '#9cc4b2', fontSize: '0.72rem' }}>VS</div>
+                    )}
                     <div className="flex items-center gap-1.5 min-w-0 flex-row-reverse">
-                      <span className="text-base">{away ? away.flag : '⏳'}</span>
-                      <span style={{ color: '#e0f0e8', fontSize: '0.82rem' }} className="truncate">{away ? away.shortName : match.awayLabel}</span>
+                      <span className="text-base" style={{ opacity: out && !awayWon ? 0.5 : 1 }}>{away ? away.flag : '⏳'}</span>
+                      <span style={{ color: '#e0f0e8', fontSize: '0.82rem', opacity: out && !awayWon ? 0.5 : 1 }} className="truncate">{away ? away.shortName : match.awayLabel}</span>
                     </div>
                   </div>
-                  <span className="px-2 py-0.5 rounded text-xs flex-shrink-0" style={{ background: 'rgba(13,96,64,0.8)', color: '#7eb89a', fontSize: '0.65rem', fontFamily: "'Twemoji Country Flags', 'DM Mono', monospace" }}>{match.group ? `Gr. ${match.group}` : `P${match.matchNum}`}</span>
+                  {out?.status === 'live' ? (
+                    <span className="px-2 py-0.5 rounded text-xs flex-shrink-0" style={{ background: 'rgba(212,242,38,0.14)', color: '#d4f226', fontSize: '0.6rem', fontFamily: "'Twemoji Country Flags', 'DM Mono', monospace", letterSpacing: '0.05em' }}>EN VIVO</span>
+                  ) : out ? (
+                    <span className="px-2 py-0.5 rounded text-xs flex-shrink-0" style={{ background: 'rgba(74,222,128,0.12)', color: '#4ade80', fontSize: '0.6rem', fontFamily: "'Twemoji Country Flags', 'DM Mono', monospace", letterSpacing: '0.05em' }}>FINAL</span>
+                  ) : (
+                    <span className="px-2 py-0.5 rounded text-xs flex-shrink-0" style={{ background: 'rgba(13,96,64,0.8)', color: '#7eb89a', fontSize: '0.65rem', fontFamily: "'Twemoji Country Flags', 'DM Mono', monospace" }}>{match.group ? `Gr. ${match.group}` : `P${match.matchNum}`}</span>
+                  )}
                 </div>
               );
             })}

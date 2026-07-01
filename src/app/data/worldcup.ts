@@ -596,9 +596,9 @@ function slotLabel(slot: TeamSlot): string {
     : `Mejor 3° (${slot.eligibleGroups.join('/')})`;
 }
 
-// Resolve the actual team in an R32 slot from the entered group results, when known.
-// Only position slots (1°/2°) are determinable from Results; best-3rd slots stay open
-// because Results doesn't record which thirds advanced.
+// Resolve the actual team in an R32 *position* slot (1°/2°) from the entered group
+// results, when known. Best-3rd slots are resolved separately (see resolveBest3rd),
+// since which third lands in which slot comes from the real seeded fixtures.
 function slotTeam(slot: TeamSlot, results?: Results): string {
   if (slot.type !== 'pos' || !results) return '';
   const gr = results.groups[slot.group];
@@ -606,51 +606,127 @@ function slotTeam(slot: TeamSlot, results?: Results): string {
   return (slot.pos === 1 ? gr.first : gr.second) ?? '';
 }
 
-// Build all knockout matches (73–104) with placeholders, auto-filling R32 teams from
-// group results when available.
+// Resolve the best-3rd team facing a known opponent (`homeId`) in an R32 fixture.
+// We know the slot's eligible groups and the thirds that advanced (results.bestThirds);
+// the actual pairing is read from the real synced fixtures — results.kickoffs is keyed
+// by the unordered team pair, so among the eligible thirds the one that shares a fixture
+// with `homeId` is this slot's occupant. If a third meets `homeId` again in a later
+// round the earliest kickoff is the R32 one. Returns '' until the fixture is seeded.
+function resolveBest3rd(
+  homeId: string,
+  slot: Extract<TeamSlot, { type: 'best3rd' }>,
+  results?: Results,
+): string {
+  if (!homeId || !results?.kickoffs) return '';
+  const advanced = results.bestThirds ?? [];
+  const eligible = slot.eligibleGroups
+    .map(g => results.groups[g]?.third)
+    .filter((t): t is string => !!t && advanced.includes(t));
+  let best = '', bestIso: string | null = null;
+  for (const t of eligible) {
+    const iso = results.kickoffs[teamPairKey(homeId, t)];
+    if (!iso) continue;
+    if (bestIso === null || iso < bestIso) { best = t; bestIso = iso; }
+  }
+  return best;
+}
+
+// Build all knockout matches (73–104). Teams auto-fill from the synced results as the
+// bracket resolves: R32 position slots from group placements, R32 best-3rd slots from
+// the real seeded fixtures, and every deeper round from the winner/loser of its feeder
+// matches (using the per-round winner sets, so penalty-decided ties resolve correctly).
+// A side keeps its "Ganador P##" placeholder label until it's known.
 export function buildKnockoutMatches(results?: Results): Match[] {
   const out: Match[] = [];
 
+  // Teams resolved so far, keyed by our match id — lets a later round read the
+  // winner/loser of an earlier match without re-deriving it.
+  const teams: Record<string, { home: string; away: string }> = {};
+
+  const roundWinners: Record<string, string[]> = {
+    r32: results?.r32Winners ?? [],
+    r16: results?.r16Winners ?? [],
+    qf: results?.qfWinners ?? [],
+    sf: results?.sfWinners ?? [],
+  };
+  // Winner of a resolved match: the participant that appears in that round's winner
+  // set. '' when the match's teams aren't known yet or it hasn't been decided.
+  const winnerOf = (id: string, round: keyof typeof roundWinners): string => {
+    const t = teams[id];
+    if (!t?.home || !t?.away) return '';
+    const w = roundWinners[round];
+    if (w.includes(t.home)) return t.home;
+    if (w.includes(t.away)) return t.away;
+    return '';
+  };
+  const loserOf = (id: string, round: keyof typeof roundWinners): string => {
+    const win = winnerOf(id, round);
+    if (!win) return '';
+    const t = teams[id];
+    return win === t.home ? t.away : t.home;
+  };
+
   OFFICIAL_R32.forEach(m => {
+    // In the official bracket `home` is always a position slot and `away` may be a
+    // best-3rd; handle both sides generically so the data can't silently drift.
+    const home = m.home.type === 'pos'
+      ? slotTeam(m.home, results)
+      : resolveBest3rd(slotTeam(m.away, results), m.home, results);
+    const away = m.away.type === 'pos'
+      ? slotTeam(m.away, results)
+      : resolveBest3rd(home, m.away, results);
+    teams[m.id] = { home, away };
     out.push({
       id: m.id, matchNum: m.matchNum, date: m.date, time: m.time,
-      homeTeamId: slotTeam(m.home, results), awayTeamId: slotTeam(m.away, results),
+      homeTeamId: home, awayTeamId: away,
       homeLabel: slotLabel(m.home), awayLabel: slotLabel(m.away),
       status: 'upcoming', round: ROUND_R32, city: m.stadium,
     });
   });
 
-  R16_PAIRS.forEach(p => out.push({
-    id: p.id, matchNum: p.matchNum, date: p.date, time: p.time,
-    homeTeamId: '', awayTeamId: '',
-    homeLabel: `Ganador P${KO_MATCH_NUM[p.r32a]}`, awayLabel: `Ganador P${KO_MATCH_NUM[p.r32b]}`,
-    status: 'upcoming', round: ROUND_R16, city: p.stadium,
-  }));
+  R16_PAIRS.forEach(p => {
+    const home = winnerOf(p.r32a, 'r32'), away = winnerOf(p.r32b, 'r32');
+    teams[p.id] = { home, away };
+    out.push({
+      id: p.id, matchNum: p.matchNum, date: p.date, time: p.time,
+      homeTeamId: home, awayTeamId: away,
+      homeLabel: `Ganador P${KO_MATCH_NUM[p.r32a]}`, awayLabel: `Ganador P${KO_MATCH_NUM[p.r32b]}`,
+      status: 'upcoming', round: ROUND_R16, city: p.stadium,
+    });
+  });
 
-  QF_PAIRS.forEach(p => out.push({
-    id: p.id, matchNum: p.matchNum, date: p.date, time: p.time,
-    homeTeamId: '', awayTeamId: '',
-    homeLabel: `Ganador P${KO_MATCH_NUM[p.r16a]}`, awayLabel: `Ganador P${KO_MATCH_NUM[p.r16b]}`,
-    status: 'upcoming', round: ROUND_QF, city: p.stadium,
-  }));
+  QF_PAIRS.forEach(p => {
+    const home = winnerOf(p.r16a, 'r16'), away = winnerOf(p.r16b, 'r16');
+    teams[p.id] = { home, away };
+    out.push({
+      id: p.id, matchNum: p.matchNum, date: p.date, time: p.time,
+      homeTeamId: home, awayTeamId: away,
+      homeLabel: `Ganador P${KO_MATCH_NUM[p.r16a]}`, awayLabel: `Ganador P${KO_MATCH_NUM[p.r16b]}`,
+      status: 'upcoming', round: ROUND_QF, city: p.stadium,
+    });
+  });
 
-  SF_PAIRS.forEach(p => out.push({
-    id: p.id, matchNum: p.matchNum, date: p.date, time: p.time,
-    homeTeamId: '', awayTeamId: '',
-    homeLabel: `Ganador P${KO_MATCH_NUM[p.qfa]}`, awayLabel: `Ganador P${KO_MATCH_NUM[p.qfb]}`,
-    status: 'upcoming', round: ROUND_SF, city: p.stadium,
-  }));
+  SF_PAIRS.forEach(p => {
+    const home = winnerOf(p.qfa, 'qf'), away = winnerOf(p.qfb, 'qf');
+    teams[p.id] = { home, away };
+    out.push({
+      id: p.id, matchNum: p.matchNum, date: p.date, time: p.time,
+      homeTeamId: home, awayTeamId: away,
+      homeLabel: `Ganador P${KO_MATCH_NUM[p.qfa]}`, awayLabel: `Ganador P${KO_MATCH_NUM[p.qfb]}`,
+      status: 'upcoming', round: ROUND_SF, city: p.stadium,
+    });
+  });
 
   out.push({
     id: 'bronze', matchNum: BRONZE_INFO.matchNum, date: BRONZE_INFO.date, time: BRONZE_INFO.time,
-    homeTeamId: '', awayTeamId: '',
+    homeTeamId: loserOf(SF_PAIRS[0].id, 'sf'), awayTeamId: loserOf(SF_PAIRS[1].id, 'sf'),
     homeLabel: `Perdedor P${SF_PAIRS[0].matchNum}`, awayLabel: `Perdedor P${SF_PAIRS[1].matchNum}`,
     status: 'upcoming', round: ROUND_BRONZE, city: BRONZE_INFO.stadium,
   });
 
   out.push({
     id: 'final', matchNum: FINAL_INFO.matchNum, date: FINAL_INFO.date, time: FINAL_INFO.time,
-    homeTeamId: '', awayTeamId: '',
+    homeTeamId: winnerOf(SF_PAIRS[0].id, 'sf'), awayTeamId: winnerOf(SF_PAIRS[1].id, 'sf'),
     homeLabel: `Ganador P${SF_PAIRS[0].matchNum}`, awayLabel: `Ganador P${SF_PAIRS[1].matchNum}`,
     status: 'upcoming', round: ROUND_FINAL, city: FINAL_INFO.stadium,
   });
