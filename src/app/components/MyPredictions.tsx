@@ -1,9 +1,116 @@
 import { useState } from 'react';
-import { Plus, Trophy, Trash2, Edit3, Star, ChevronRight, Lock, Swords, Copy, Check, UploadCloud, Clock } from 'lucide-react';
-import { type Prediction, type Results, type PaymentStatus, getTeam } from '../data/worldcup';
-import { computeScore, leagueScore } from '../../lib/scoring';
+import { Plus, Trophy, Trash2, Edit3, Star, ChevronRight, Lock, Swords, Copy, Check, UploadCloud, Clock, XCircle } from 'lucide-react';
+import { type Prediction, type Results, type PaymentStatus, type League, getTeam, computeEliminatedTeams } from '../data/worldcup';
+import { computeScore, leagueScore, POINTS, type ScoreBreakdown } from '../../lib/scoring';
 import { leagueLabel, paymentConfigured } from '../../lib/payment';
 import { PaymentCta } from './PaymentCta';
+
+// Have any real results been loaded yet? Before kickoff everything is zeros/placeholders,
+// so we show an explanatory note instead of a wall of "0 pts".
+function tournamentStarted(r: Results): boolean {
+  return Object.keys(r.groups).length > 0
+    || (r.r32Winners?.length ?? 0) > 0 || (r.r16Winners?.length ?? 0) > 0
+    || (r.qfWinners?.length ?? 0) > 0 || (r.sfWinners?.length ?? 0) > 0
+    || !!r.champion;
+}
+
+// ─── Per-pick status (correct / eliminated / still alive) ──────────────────────
+type PickStatus = 'correct' | 'eliminated' | 'alive' | 'pending';
+
+function pickStatus(teamId: string, correct: boolean, eliminated: Set<string>, started: boolean): PickStatus {
+  if (!teamId) return 'pending';
+  if (correct) return 'correct';
+  if (eliminated.has(teamId)) return 'eliminated';
+  return started ? 'alive' : 'pending';
+}
+
+// A picked team shown with its live status: green when it landed exactly, struck through
+// with an "ELIMINADO" tag when it's already out, otherwise neutral.
+function PickTeam({ teamId, prefix, status }: { teamId: string; prefix?: string; status: PickStatus }) {
+  const team = getTeam(teamId);
+  const out = status === 'eliminated';
+  const color = status === 'correct' ? '#4ade80' : out ? '#e07a82' : '#e0f0e8';
+  return (
+    <div className="flex items-center gap-1.5">
+      {prefix && <span style={{ fontSize: '0.85rem' }}>{prefix}</span>}
+      <span style={{ opacity: out ? 0.55 : 1 }}>{team.flag}</span>
+      <span style={{
+        fontSize: '0.8rem', color, fontFamily: "'Twemoji Country Flags', 'Nunito Sans'", fontWeight: 600,
+        textDecoration: out ? 'line-through' : 'none', textDecorationColor: 'rgba(224,122,130,0.7)',
+      }}>
+        {team.shortName}
+      </span>
+      {status === 'correct' && <Check size={13} style={{ color: '#4ade80' }} />}
+      {out && (
+        <span className="px-1.5 py-0.5 rounded" style={{ background: 'rgba(230,57,70,0.14)', color: '#e07a82', fontSize: '0.54rem', fontFamily: "'Twemoji Country Flags', 'DM Mono'", letterSpacing: '0.04em' }}>
+          ELIMINADO
+        </span>
+      )}
+    </div>
+  );
+}
+
+// ─── Score breakdown ("cómo voy") ──────────────────────────────────────────────
+const BREAKDOWN_ROWS: { key: keyof ScoreBreakdown; label: string; unit: number; binary?: boolean }[] = [
+  { key: 'groups', label: 'Grupos', unit: POINTS.groupExact },
+  { key: 'r32', label: 'Dieciseisavos', unit: POINTS.r32 },
+  { key: 'r16', label: 'Octavos', unit: POINTS.r16 },
+  { key: 'qf', label: 'Cuartos', unit: POINTS.qf },
+  { key: 'sf', label: 'Semifinales', unit: POINTS.sf },
+  { key: 'champion', label: 'Campeón', unit: POINTS.champion, binary: true },
+  { key: 'runnerUp', label: 'Subcampeón', unit: POINTS.runnerUp, binary: true },
+  { key: 'thirdPlace', label: 'Tercer lugar', unit: POINTS.thirdPlace, binary: true },
+];
+
+function inLeagueScope(key: keyof ScoreBreakdown, league: League): boolean {
+  if (league === 'r32') return key !== 'groups';
+  if (league === 'r16') return key !== 'groups' && key !== 'r32';
+  return true;
+}
+
+function ScoreBreakdownPanel({ entry, results, accent }: { entry: Prediction; results: Results; accent: string }) {
+  const started = tournamentStarted(results);
+  const bd = computeScore(entry, results);
+  const leaguePts = leagueScore(bd, entry.league);
+  const rows = BREAKDOWN_ROWS.filter(r => inLeagueScope(r.key, entry.league));
+
+  return (
+    <div className="rounded-lg" style={{ background: 'rgba(0,0,0,0.16)', border: '1px solid rgba(255,255,255,0.06)', padding: '10px 12px' }}>
+      <div className="flex items-center gap-1.5 mb-2">
+        <Trophy size={12} style={{ color: accent }} />
+        <span style={{ fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", color: accent, fontSize: '0.72rem', letterSpacing: '0.1em' }}>CÓMO VOY</span>
+      </div>
+      {!started ? (
+        <p style={{ color: '#7eb89a', fontSize: '0.74rem' }}>
+          Aún no hay resultados cargados. Aquí verás tus aciertos y puntos ronda por ronda conforme avance el Mundial.
+        </p>
+      ) : (
+        <div className="flex flex-col gap-1">
+          {rows.map(r => {
+            const pts = bd[r.key];
+            const hit = pts > 0;
+            const aciertos = r.unit ? Math.round(pts / r.unit) : 0;
+            return (
+              <div key={r.key} className="flex items-center gap-2" style={{ fontSize: '0.72rem' }}>
+                <span style={{ flex: 1, color: '#c0d8cc', fontFamily: "'Twemoji Country Flags', 'Nunito Sans'" }}>{r.label}</span>
+                <span style={{ color: hit ? '#4ade80' : '#4a7d65', fontFamily: "'Twemoji Country Flags', 'DM Mono'", minWidth: '78px', textAlign: 'right' }}>
+                  {r.binary ? (hit ? 'acertado ✓' : '—') : (aciertos > 0 ? `${aciertos} acierto${aciertos > 1 ? 's' : ''}` : '—')}
+                </span>
+                <span style={{ color: hit ? '#e0f0e8' : '#4a7d65', fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", fontWeight: 700, minWidth: '46px', textAlign: 'right' }}>
+                  {pts} pts
+                </span>
+              </div>
+            );
+          })}
+          <div className="flex items-center gap-2 mt-1 pt-1.5" style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+            <span style={{ flex: 1, color: accent, fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", fontSize: '0.78rem', letterSpacing: '0.06em' }}>TOTAL</span>
+            <span style={{ color: accent, fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", fontWeight: 700, fontSize: '0.95rem' }}>{leaguePts} pts</span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 interface MyPredictionsProps {
   predictions: Prediction[];
@@ -91,29 +198,27 @@ function FolioRow({ id, hint, compact }: { id: string; hint?: boolean; compact?:
   );
 }
 
-function PodiumRow({ prediction }: { prediction: Prediction }) {
-  const champion = prediction.champion ? getTeam(prediction.champion) : null;
-  const runnerUp = prediction.runnerUp ? getTeam(prediction.runnerUp) : null;
-  const thirdPlace = prediction.thirdPlace ? getTeam(prediction.thirdPlace) : null;
-  if (!champion) return null;
+function PodiumRow({ prediction, results, eliminated }: { prediction: Prediction; results: Results; eliminated: Set<string> }) {
+  if (!prediction.champion) return null;
+  const started = tournamentStarted(results);
+  const slots = [
+    { emoji: '🏆', teamId: prediction.champion, correct: !!results.champion && prediction.champion === results.champion },
+    { emoji: '🥈', teamId: prediction.runnerUp, correct: !!results.runnerUp && prediction.runnerUp === results.runnerUp },
+    { emoji: '🥉', teamId: prediction.thirdPlace, correct: !!results.thirdPlace && prediction.thirdPlace === results.thirdPlace },
+  ];
   return (
     <div className="flex items-center gap-4 flex-wrap">
-      {[{ label: '🏆', team: champion }, { label: '🥈', team: runnerUp }, { label: '🥉', team: thirdPlace }].map(({ label, team }) =>
-        team ? (
-          <div key={label} className="flex items-center gap-1.5">
-            <span style={{ fontSize: '0.85rem' }}>{label}</span>
-            <span>{team.flag}</span>
-            <span style={{ fontSize: '0.8rem', color: '#e0f0e8', fontFamily: "'Twemoji Country Flags', 'Nunito Sans'", fontWeight: 600 }}>{team.shortName}</span>
-          </div>
-        ) : null,
-      )}
+      {slots.map(s => s.teamId
+        ? <PickTeam key={s.emoji} teamId={s.teamId} prefix={s.emoji} status={pickStatus(s.teamId, s.correct, eliminated, started)} />
+        : null)}
     </div>
   );
 }
 
-function SoloCard({ entry, results, email, joinOpen, onEdit, onDelete }: {
+function SoloCard({ entry, results, eliminated, email, joinOpen, onEdit, onDelete }: {
   entry: Prediction;
   results: Results;
+  eliminated: Set<string>;
   email?: string;
   joinOpen: boolean;
   onEdit: () => void;
@@ -141,7 +246,9 @@ function SoloCard({ entry, results, email, joinOpen, onEdit, onDelete }: {
         </div>
       </div>
 
-      <div className="px-5 pb-4"><PodiumRow prediction={entry} /></div>
+      <div className="px-5 pb-4"><PodiumRow prediction={entry} results={results} eliminated={eliminated} /></div>
+
+      <div className="px-5 pb-4"><ScoreBreakdownPanel entry={entry} results={results} accent="#c084fc" /></div>
 
       <div className="px-5 pb-3 flex flex-col gap-2.5">
         <FolioRow id={entry.id} hint={entry.paymentStatus === 'pending'} />
@@ -170,9 +277,10 @@ function SoloCard({ entry, results, email, joinOpen, onEdit, onDelete }: {
   );
 }
 
-function MainCard({ main, results, email, lockPassed, onEdit, onDelete }: {
+function MainCard({ main, results, eliminated, email, lockPassed, onEdit, onDelete }: {
   main: Prediction;
   results: Results;
+  eliminated: Set<string>;
   email?: string;
   lockPassed: boolean;
   onEdit: () => void;
@@ -201,7 +309,9 @@ function MainCard({ main, results, email, lockPassed, onEdit, onDelete }: {
         </div>
       </div>
 
-      <div className="px-5 pb-4"><PodiumRow prediction={main} /></div>
+      <div className="px-5 pb-4"><PodiumRow prediction={main} results={results} eliminated={eliminated} /></div>
+
+      <div className="px-5 pb-4"><ScoreBreakdownPanel entry={main} results={results} accent="#f5a623" /></div>
 
       <div className="px-5 pb-3 flex flex-col gap-2.5">
         <FolioRow id={main.id} hint={main.paymentStatus === 'pending'} />
@@ -214,18 +324,29 @@ function MainCard({ main, results, email, lockPassed, onEdit, onDelete }: {
           <div style={{ fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", color: '#7eb89a', fontSize: '0.75rem', letterSpacing: '0.1em', marginBottom: '10px' }}>PICKS DE GRUPOS</div>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             {Object.entries(main.groups).map(([gId, gPick]) => {
-              const t1 = gPick.first ? getTeam(gPick.first) : null;
-              const t2 = gPick.second ? getTeam(gPick.second) : null;
+              const actual = results.groups[gId];
+              const picks = [
+                { pos: 1, teamId: gPick.first, correct: !!actual && !!gPick.first && gPick.first === actual.first },
+                { pos: 2, teamId: gPick.second, correct: !!actual && !!gPick.second && gPick.second === actual.second },
+              ];
               return (
                 <div key={gId} className="rounded-lg p-2" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)' }}>
                   <div style={{ fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", color: '#f5a623', fontSize: '0.68rem', marginBottom: '4px', letterSpacing: '0.1em' }}>GR. {gId}</div>
-                  {[t1, t2].map((t, i) => t && (
-                    <div key={i} className="flex items-center gap-1">
-                      <span style={{ fontFamily: "'Twemoji Country Flags', 'DM Mono'", color: i === 0 ? '#f5a623' : '#d4f226', fontSize: '0.62rem' }}>{i + 1}°</span>
-                      <span style={{ fontSize: '0.82rem' }}>{t.flag}</span>
-                      <span style={{ fontSize: '0.68rem', color: '#c0d8cc', fontFamily: "'Twemoji Country Flags', 'Nunito Sans'" }}>{t.shortName}</span>
-                    </div>
-                  ))}
+                  {picks.map(({ pos, teamId, correct }) => {
+                    if (!teamId) return null;
+                    const team = getTeam(teamId);
+                    const out = !correct && eliminated.has(teamId);
+                    const nameColor = correct ? '#4ade80' : out ? '#e07a82' : '#c0d8cc';
+                    return (
+                      <div key={pos} className="flex items-center gap-1">
+                        <span style={{ fontFamily: "'Twemoji Country Flags', 'DM Mono'", color: pos === 1 ? '#f5a623' : '#d4f226', fontSize: '0.62rem' }}>{pos}°</span>
+                        <span style={{ fontSize: '0.82rem', opacity: out ? 0.55 : 1 }}>{team.flag}</span>
+                        <span style={{ fontSize: '0.68rem', color: nameColor, fontFamily: "'Twemoji Country Flags', 'Nunito Sans'", textDecoration: out ? 'line-through' : 'none', textDecorationColor: 'rgba(224,122,130,0.7)' }}>{team.shortName}</span>
+                        {correct && <Check size={11} style={{ color: '#4ade80' }} />}
+                        {out && <XCircle size={10} style={{ color: '#e07a82' }} />}
+                      </div>
+                    );
+                  })}
                 </div>
               );
             })}
@@ -265,6 +386,8 @@ export function MyPredictions({
   const mains = predictions.filter(p => p.league === 'main');
   // Standalone side-league entries (R32 / R16 tournaments, independent of the main).
   const solos = predictions.filter(p => p.league !== 'main');
+  // Teams already knocked out of the tournament — used to flag eliminated picks.
+  const eliminated = computeEliminatedTeams(results);
   const pendingCount = mains.filter(p => p.paymentStatus === 'pending').length;
   // Any unpaid entry (main or side-league) → offer the "subir comprobante" shortcut.
   const anyPending = predictions.some(p => p.paymentStatus === 'pending');
@@ -319,6 +442,7 @@ export function MyPredictions({
               key={main.id}
               main={main}
               results={results}
+              eliminated={eliminated}
               email={email}
               lockPassed={lockPassed}
               onEdit={() => onEdit(main)}
@@ -373,6 +497,7 @@ export function MyPredictions({
                 key={s.id}
                 entry={s}
                 results={results}
+                eliminated={eliminated}
                 email={email}
                 joinOpen={joinOpenFor(s.league)}
                 onEdit={() => onEdit(s)}

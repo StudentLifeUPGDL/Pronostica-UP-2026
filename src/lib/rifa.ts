@@ -4,7 +4,7 @@ import {
 import { db, firebaseConfigured } from './firebase';
 import { recomputePublicStats } from './stats';
 import {
-  makeTicketFolio, POOL_CAPACITY,
+  makeTicketFolio, POOL_CAPACITY, computeEliminatedTeams,
   type Ticket, type Pool, type PaymentStatus, type Results, type RifaPrizes,
 } from '../app/data/worldcup';
 
@@ -179,34 +179,52 @@ export function rifaCashTotal(prizes: RifaPrizes): number {
 
 export interface TeamStatus { label: string; color: string }
 
+// Colours: green = still alive, red = out.
+const ALIVE = '#4ade80';
+const ALIVE_DIM = '#9cc4b2';
+const OUT = '#e07a82';
+
+// Memoize the eliminated-team set per Results object. The Firestore snapshot replaces
+// `r` with a new object on every update, so identity is a safe cache key within a render.
+let _elimCache: { r: Results; set: Set<string> } | null = null;
+function eliminatedSet(r: Results): Set<string> {
+  if (_elimCache && _elimCache.r === r) return _elimCache.set;
+  const set = computeEliminatedTeams(r);
+  _elimCache = { r, set };
+  return set;
+}
+
 // How far an assigned team has gone, derived live from the official Results doc.
 // Display only — used to tell a ticket owner whether their team is still alive.
+// A team is flagged "Eliminado · <ronda>" as soon as it's actually knocked out (the
+// round it lost), not only once the whole podium is decided.
 export function teamStatus(teamId: string, r: Results): TeamStatus {
   if (!teamId) return { label: 'Sin asignar', color: '#4a7d65' };
   if (r.champion === teamId)   return { label: '🏆 Campeón', color: '#f5a623' };
   if (r.runnerUp === teamId)   return { label: '🥈 Subcampeón', color: '#d4f226' };
   if (r.thirdPlace === teamId) return { label: '🥉 Tercer lugar', color: '#cd7f32' };
 
-  // If the final/3rd-place is decided and this team isn't on the podium, it's out.
-  const podiumDecided = !!r.champion;
+  const out = eliminatedSet(r).has(teamId);
 
-  if ((r.sfWinners ?? []).includes(teamId)) return { label: 'Finalista', color: '#4ade80' };
-  if ((r.qfWinners ?? []).includes(teamId)) return { label: podiumDecided ? 'Eliminado · Semifinal' : 'En Semifinal', color: podiumDecided ? '#7eb89a' : '#4ade80' };
-  if ((r.r16Winners ?? []).includes(teamId)) return { label: podiumDecided ? 'Eliminado · Cuartos' : 'En Cuartos', color: podiumDecided ? '#7eb89a' : '#4ade80' };
-  if ((r.r32Winners ?? []).includes(teamId)) return { label: podiumDecided ? 'Eliminado · Octavos' : 'En Octavos', color: podiumDecided ? '#7eb89a' : '#4ade80' };
+  // The furthest round the team reached; "Eliminado · X" if it's already out there,
+  // otherwise "En X" (still alive / round not decided yet).
+  if ((r.sfWinners ?? []).includes(teamId)) return { label: 'Finalista', color: ALIVE };
+  if ((r.qfWinners ?? []).includes(teamId)) return { label: out ? 'Eliminado · Semifinal' : 'En Semifinal', color: out ? OUT : ALIVE };
+  if ((r.r16Winners ?? []).includes(teamId)) return { label: out ? 'Eliminado · Cuartos' : 'En Cuartos', color: out ? OUT : ALIVE };
+  if ((r.r32Winners ?? []).includes(teamId)) return { label: out ? 'Eliminado · Octavos' : 'En Octavos', color: out ? OUT : ALIVE };
 
   // Reached the knockout (group winner/runner-up or best third) but no KO result yet.
   const inR32 = Object.values(r.groups ?? {}).some(g => g.first === teamId || g.second === teamId)
     || (r.bestThirds ?? []).includes(teamId);
-  if (inR32) return { label: podiumDecided ? 'Eliminado' : 'En Dieciseisavos', color: podiumDecided ? '#7eb89a' : '#9cc4b2' };
+  if (inR32) return { label: out ? 'Eliminado · Dieciseisavos' : 'En Dieciseisavos', color: out ? OUT : ALIVE_DIM };
 
   // Group stage finished and the team isn't 1st/2nd/3rd → didn't qualify.
   const groupFinishedForTeam = Object.values(r.groups ?? {}).some(
     g => g.first === teamId || g.second === teamId || g.third === teamId,
   );
-  if (groupFinishedForTeam) return { label: 'Eliminado en grupos', color: '#7eb89a' };
+  if (groupFinishedForTeam) return { label: 'Eliminado en grupos', color: OUT };
 
-  return { label: 'En el torneo', color: '#9cc4b2' };
+  return { label: 'En el torneo', color: ALIVE_DIM };
 }
 
 // True once a team is definitively out (no chance at any podium prize).

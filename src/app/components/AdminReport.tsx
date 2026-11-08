@@ -37,6 +37,7 @@ export function AdminReport({ config, results }: { config: AppConfig; results: R
   const [preds, setPreds] = useState<Prediction[]>([]);
   const [users, setUsers] = useState<Record<string, UserDoc>>({});
   const [reminderJob, setReminderJob] = useState<MailJob | null>(null);
+  const [announceJob, setAnnounceJob] = useState<MailJob | null>(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState('');
@@ -44,12 +45,14 @@ export function AdminReport({ config, results }: { config: AppConfig; results: R
   async function load() {
     setError(''); setBusy(true);
     try {
-      const [allPreds, allUsers, lastJob] = await Promise.all([
-        fetchAllPredictions(), fetchAllUsers(), fetchLatestReminderJob('pronostica-reminder'),
+      const [allPreds, allUsers, lastJob, lastAnnounce] = await Promise.all([
+        fetchAllPredictions(), fetchAllUsers(),
+        fetchLatestReminderJob('pronostica-reminder'), fetchLatestReminderJob('results-announcement'),
       ]);
       setPreds(allPreds);
       setUsers(Object.fromEntries(allUsers.map(u => [u.uid, u])));
       setReminderJob(lastJob);
+      setAnnounceJob(lastAnnounce);
     } catch {
       setError('No se pudieron cargar los datos. Necesitas el permiso de administrador: ejecuta scripts/setAdmin.mjs con tu correo y vuelve a iniciar sesión.');
     } finally {
@@ -105,6 +108,27 @@ export function AdminReport({ config, results }: { config: AppConfig; results: R
       await load();
     } catch {
       setError('No se pudo encolar el recordatorio. Necesitas permiso de administrador.');
+    } finally { setBusy(false); }
+  }
+
+  const announceQueued = announceJob?.status === 'pending';
+  const tournamentOver = !!results.champion;
+  const paidCount = preds.filter(p => p.paymentStatus === 'paid').length;
+
+  async function sendResultsAnnouncement() {
+    if (!window.confirm(
+      'Se enviará UN correo con los resultados finales (Top 4 por liga y podio del Mundial) ' +
+      'a todos los participantes pagados de Pronostica y Rifa, en copia oculta (CCO) para no exponer sus correos.\n\n' +
+      'No incluye montos de premios: solo avisa que se contactará directamente a los ganadores.\n\n' +
+      'El correo lo envía el cron (GitHub Actions) en su próxima corrida (unos minutos). ¿Continuar?',
+    )) return;
+    setBusy(true); setNote(''); setError('');
+    try {
+      await requestReminderJob('results-announcement', user?.email ?? undefined);
+      setNote('Anuncio de resultados en cola. El cron enviará el correo en su próxima corrida (unos minutos).');
+      await load();
+    } catch {
+      setError('No se pudo encolar el anuncio. Necesitas permiso de administrador.');
     } finally { setBusy(false); }
   }
 
@@ -252,6 +276,34 @@ export function AdminReport({ config, results }: { config: AppConfig; results: R
             className="flex items-center gap-1.5 px-4 py-2 rounded-lg cursor-pointer disabled:opacity-50"
             style={{ background: 'rgba(96,165,250,0.12)', color: '#60a5fa', border: '1px solid rgba(96,165,250,0.35)', fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", fontSize: '0.78rem', whiteSpace: 'nowrap' }}>
             <Mail size={14} /> {reminderQueued ? 'EN COLA…' : 'ENVIAR RECORDATORIO'}
+          </button>
+        </div>
+      </section>
+
+      {/* ── Final results announcement ── */}
+      <section className="rounded-xl overflow-hidden" style={{ background: '#0d5035', border: '1px solid rgba(245,166,35,0.3)' }}>
+        <div className="px-5 py-3 flex items-center gap-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+          <Trophy size={15} style={{ color: '#f5a623' }} />
+          <span style={{ fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", color: '#f5a623', fontSize: '0.95rem', letterSpacing: '0.05em' }}>ANUNCIO DE RESULTADOS FINALES</span>
+        </div>
+        <div className="px-5 py-4 flex flex-wrap items-center justify-between gap-3">
+          <div style={{ color: '#9cc4b2', fontSize: '0.8rem', maxWidth: '420px' }}>
+            Envía <strong style={{ color: '#e0f0e8' }}>un solo correo en copia oculta (CCO)</strong> a todos los participantes pagados
+            de Pronostica y Rifa ({paidCount} pronóstico(s) pagado(s)) con el <strong style={{ color: '#f5a623' }}>Top 4 de cada liga</strong> y
+            el podio del Mundial. Sin montos de premios: solo avisa que se contactará a los ganadores.
+            {!tournamentOver && <div style={{ marginTop: '6px', color: '#e63946' }}>Aún no hay campeón en los resultados oficiales — se habilita al terminar el torneo.</div>}
+            {announceJob && (
+              <div style={{ marginTop: '8px', fontSize: '0.74rem', fontFamily: "'Twemoji Country Flags', 'DM Mono'" }}>
+                {announceJob.status === 'pending' && <span style={{ color: '#f5a623' }}>● En cola — pendiente de envío por el cron.</span>}
+                {announceJob.status === 'sent' && <span style={{ color: '#4ade80' }}>● Último envío: {announceJob.sentCount ?? 0} destinatario(s){announceJob.finishedAt ? ` · ${fmtDate(announceJob.finishedAt)}` : ''}.</span>}
+                {announceJob.status === 'error' && <span style={{ color: '#e63946' }}>● Falló el último envío: {announceJob.error ?? 'error desconocido'}.</span>}
+              </div>
+            )}
+          </div>
+          <button onClick={sendResultsAnnouncement} disabled={busy || announceQueued || !tournamentOver}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-lg cursor-pointer disabled:opacity-50"
+            style={{ background: 'rgba(245,166,35,0.12)', color: '#f5a623', border: '1px solid rgba(245,166,35,0.35)', fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif", fontSize: '0.78rem', whiteSpace: 'nowrap' }}>
+            <Trophy size={14} /> {announceQueued ? 'EN COLA…' : 'ENVIAR RESULTADOS'}
           </button>
         </div>
       </section>

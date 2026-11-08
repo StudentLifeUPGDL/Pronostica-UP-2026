@@ -6,11 +6,13 @@ import { db, firebaseConfigured } from './firebase';
 // There is no web backend, so the browser can't send mail directly. Instead the
 // admin queues a 'pending' job in the `mailJobs` collection and the GitHub Actions
 // cron (scripts/sendReminders.mjs) sends the emails on its next run and marks the
-// job 'sent'. Used by both modes:
-//   - 'rifa-reminder'       → owners of unpaid Rifa tickets (AdminRifa).
-//   - 'pronostica-reminder' → owners of unpaid Pronostica entries (AdminReport).
+// job 'sent'. Job types:
+//   - 'rifa-reminder'         → owners of unpaid Rifa tickets (AdminRifa).
+//   - 'pronostica-reminder'   → owners of unpaid Pronostica entries (AdminReport).
+//   - 'results-announcement'  → final results (Top 4 + podio) to every PAID
+//                               participant of both modes, one mail via BCC.
 
-export type MailJobType = 'rifa-reminder' | 'pronostica-reminder';
+export type MailJobType = 'rifa-reminder' | 'pronostica-reminder' | 'results-announcement';
 
 export interface MailJob {
   id: string;
@@ -30,10 +32,10 @@ function stripUndefined<T extends Record<string, unknown>>(obj: T): T {
   return out as T;
 }
 
-// Queue a payment-reminder send. The cron reads config.paymentDeadline and the live
-// ticket/prediction list (for the given type) when it runs.
+// Queue a mail send. The cron reads the live config/results/entry lists (for the
+// given type) when it runs — nothing is snapshotted here.
 export async function requestReminderJob(type: MailJobType, requestedBy?: string): Promise<MailJob> {
-  const prefix = type === 'rifa-reminder' ? 'rmd' : 'pmd';
+  const prefix = type === 'rifa-reminder' ? 'rmd' : type === 'results-announcement' ? 'res' : 'pmd';
   const job: MailJob = {
     id: `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`,
     type,

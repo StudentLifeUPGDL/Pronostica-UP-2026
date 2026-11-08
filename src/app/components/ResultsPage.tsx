@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { CheckCircle2, Clock, Trophy } from 'lucide-react';
 import { GROUPS, buildSchedule, getTeam, matchOutcome, matchDateTime, PHASE_ORDER, type Match, type Results, EMPTY_RESULTS } from '../data/worldcup';
+import { KnockoutBracket } from './KnockoutBracket';
 
-type Tab = 'grupos' | 'partidos' | 'clasificados';
+type Tab = 'grupos' | 'partidos' | 'llaves' | 'clasificados';
 
 // One side of a match row: a resolved team, or a placeholder label when unknown.
 function MatchSide({ teamId, label, align, dim = false }: { teamId: string; label?: string; align: 'left' | 'right'; dim?: boolean }) {
@@ -28,6 +29,7 @@ export function ResultsPage({ results = EMPTY_RESULTS }: { results?: Results }) 
 
   const tabs: { id: Tab; label: string }[] = [
     { id: 'partidos', label: 'PARTIDOS' },
+    { id: 'llaves', label: 'LLAVES' },
     { id: 'grupos', label: 'GRUPOS' },
     { id: 'clasificados', label: 'CLASIFICADOS' },
   ];
@@ -76,11 +78,11 @@ export function ResultsPage({ results = EMPTY_RESULTS }: { results?: Results }) 
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className="flex-1 py-2 px-3 rounded-lg transition-all cursor-pointer"
+            className="flex-1 py-2 px-2 rounded-lg transition-all cursor-pointer text-center"
             style={{
               fontFamily: "'Twemoji Country Flags', 'Oswald', sans-serif",
-              fontSize: '0.82rem',
-              letterSpacing: '0.08em',
+              fontSize: '0.72rem',
+              letterSpacing: '0.03em',
               background: activeTab === tab.id ? '#f5a623' : 'transparent',
               color: activeTab === tab.id ? '#062b1a' : '#7eb89a',
               fontWeight: activeTab === tab.id ? 700 : 400,
@@ -165,6 +167,9 @@ export function ResultsPage({ results = EMPTY_RESULTS }: { results?: Results }) 
           ))}
         </div>
       )}
+
+      {/* Tab: Llaves — knockout bracket showing who's advancing, matchups, dates & venues */}
+      {activeTab === 'llaves' && <KnockoutBracket results={results} />}
 
       {/* Tab: Grupos */}
       {activeTab === 'grupos' && (

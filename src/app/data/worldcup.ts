@@ -744,6 +744,62 @@ export function buildSchedule(results?: Results): Match[] {
 export const GROUP_STAGE_MATCHES: Match[] = buildGroupStageMatches();
 export const FULL_SCHEDULE: Match[] = buildSchedule();
 
+// ─── Team elimination status ────────────────────────────────────────────────────
+// The set of team IDs that are already OUT of the tournament, derived from the live
+// results. Deliberately conservative: a team is only marked eliminated once the round
+// that knocked it out has actually been decided — never on a match that hasn't happened.
+//   • Group stage: 4th place is out as soon as the group is complete; the 3rd-placed
+//     team is out only once the 8 best thirds are finalized and it isn't among them.
+//   • Knockout: the loser of any decided match (winner taken from the per-round winner
+//     sets, so penalty shoot-outs resolve correctly) is out. The Final's loser (the
+//     runner-up) is included — they can no longer lift the cup.
+export function computeEliminatedTeams(results?: Results): Set<string> {
+  const out = new Set<string>();
+  if (!results) return out;
+
+  const bestThirds = new Set((results.bestThirds ?? []).filter(Boolean));
+  const thirdsFinal = (results.bestThirds?.length ?? 0) >= 8;
+
+  // Group stage.
+  for (const g of GROUPS) {
+    const gr = results.groups[g.id];
+    if (!gr) continue; // group not finished yet → everyone still alive
+    for (const t of g.teams) {
+      const id = t.id;
+      if (id === gr.first || id === gr.second) continue; // advanced as 1° / 2°
+      if (id === gr.third) {
+        // 3rd place: only out once the best-thirds cut is known and it missed it.
+        if (thirdsFinal && !bestThirds.has(id)) out.add(id);
+        continue;
+      }
+      out.add(id); // anyone else in a completed group finished 4th → out
+    }
+  }
+
+  // Knockout rounds: the loser of every decided match is out.
+  const winnerSets: Record<string, string[]> = {
+    [ROUND_R32]: results.r32Winners ?? [],
+    [ROUND_R16]: results.r16Winners ?? [],
+    [ROUND_QF]: results.qfWinners ?? [],
+    [ROUND_SF]: results.sfWinners ?? [],
+  };
+  for (const m of buildKnockoutMatches(results)) {
+    const h = m.homeTeamId, a = m.awayTeamId;
+    if (!h || !a) continue; // teams not resolved yet
+    let winner = '';
+    if (m.round === ROUND_FINAL) winner = results.champion || '';
+    else if (m.round === ROUND_BRONZE) continue; // both played (and lost) the SF already
+    else {
+      const set = winnerSets[m.round ?? ''] ?? [];
+      if (set.includes(h)) winner = h;
+      else if (set.includes(a)) winner = a;
+    }
+    if (winner) out.add(winner === h ? a : h);
+  }
+
+  return out;
+}
+
 // ─── Per-match scorelines (Partidos calendar) ───────────────────────────────────
 
 // Stable key for the unordered pair of teams in a fixture. The sync writes results
